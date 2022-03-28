@@ -74,9 +74,11 @@ func TestSetCountMetric(t *testing.T) {
 			want:            200,
 		},
 		{
-			name: "case 2. Other metric",
-			url:  "counter/MyMetric/123",
-			want: 200,
+			name:            "case 2. Other metric",
+			url:             "counter/MyMetric/123",
+			want:            200,
+			count:           123,
+			currentCountVal: 0,
 		},
 		{
 			name: "case 3. Wrong value, empty",
@@ -127,5 +129,17 @@ func TestSetCountMetric(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestNotImplemented(t *testing.T) {
+	request := httptest.NewRequest(http.MethodPost, "/update/something", nil)
+	w := httptest.NewRecorder()
+	h := http.HandlerFunc(NotImplemented)
+	h.ServeHTTP(w, request)
+	response := w.Result()
+	defer response.Body.Close()
+	if response.StatusCode != 501 {
+		t.Errorf("SendRequest() = %v, want %v", response.StatusCode, 501)
 	}
 }

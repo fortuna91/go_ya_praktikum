@@ -122,3 +122,7 @@ func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 	Counter(countVal)
 	w.WriteHeader(http.StatusOK)
 }
+
+func NotImplemented(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}

@@ -9,6 +9,7 @@ import (
 func NewServer() {
 	http.HandleFunc("/update/gauge/", handlers.SetGaugeMetric)
 	http.HandleFunc("/update/counter/", handlers.SetCounterMetric)
+	http.HandleFunc("/update/", handlers.NotImplemented)
 
 	server := &http.Server{
 		Addr: "127.0.0.1:8080",
