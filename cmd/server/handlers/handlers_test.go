@@ -74,14 +74,14 @@ func TestSetCountMetric(t *testing.T) {
 			want:            200,
 		},
 		{
-			name: "case 2. Wrong metric",
+			name: "case 2. Other metric",
 			url:  "counter/MyMetric/123",
-			want: 400,
+			want: 200,
 		},
 		{
 			name: "case 3. Wrong value, empty",
 			url:  "counter/BuckHashSys/",
-			want: 400,
+			want: 404,
 		},
 		{
 			name: "case 4. Wrong value, str",
@@ -96,7 +96,7 @@ func TestSetCountMetric(t *testing.T) {
 		{
 			name: "case 6. Wrong value, empty",
 			url:  "counter/BuckHashSys",
-			want: 400,
+			want: 404,
 		},
 		{
 			name:            "case 7. CurrCount",

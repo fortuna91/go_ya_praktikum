@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var gaugeMetrics = []string{
+/*var gaugeMetrics = []string{
 	"Alloc",
 	"BuckHashSys",
 	"Frees",
@@ -37,8 +37,9 @@ var gaugeMetrics = []string{
 	"TotalAlloc",
 	"PollCount",
 	"RandomValue",
-}
-var counterMetric = "PollCount"
+}*/
+
+// var counterMetric = "PollCount"
 
 var currCount int64 = 0
 
@@ -69,10 +70,10 @@ func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got it...")
 	path := r.URL.Path
 	items := strings.Split(path, "/")
-	if !contains(gaugeMetrics, items[3]) {
+	/*if !contains(gaugeMetrics, items[3]) {
 		http.Error(w, "Unknown metric", http.StatusBadRequest)
 		return
-	}
+	}*/
 	if len(items) < 5 {
 		fmt.Printf("Not enough value. Path: %v\n", path)
 		http.Error(w, "Not enough value", http.StatusBadRequest)
@@ -96,19 +97,19 @@ func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 	// go Counter(CountChannel)
 	path := r.URL.Path
 	items := strings.Split(path, "/")
-	if items[3] != counterMetric {
+	/*if items[3] != counterMetric {
 		http.Error(w, "Unknown metric", http.StatusBadRequest)
 		return
-	}
+	}*/
 	// fixme: the same code
 	if len(items) < 5 {
 		fmt.Printf("Not enough value. Path: %v\n", path)
-		http.Error(w, "Not enough value", http.StatusBadRequest)
+		http.Error(w, "Not enough value", http.StatusNotFound)
 		return
 	}
 	val := items[4]
 	if val == "" {
-		http.Error(w, "Empty value", http.StatusBadRequest)
+		http.Error(w, "Empty value", http.StatusNotFound)
 		return
 	}
 	countVal, err := strconv.ParseInt(items[4], 10, 64)
