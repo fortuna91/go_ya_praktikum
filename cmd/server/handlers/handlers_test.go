@@ -53,6 +53,7 @@ func TestSetGaгgeMetric(t *testing.T) {
 			if response.StatusCode != tt.want {
 				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.want)
 			}
+			defer response.Body.Close()
 		})
 	}
 }
@@ -119,7 +120,7 @@ func TestSetCountMetric(t *testing.T) {
 			if response.StatusCode != tt.want {
 				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.want)
 			}
-			// todo
+			defer response.Body.Close()
 			if tt.want == 200 {
 				if currCount != tt.count+tt.currentCountVal {
 					t.Errorf("Wrong currCount = %v, want %v", currCount, tt.count+tt.currentCountVal)
