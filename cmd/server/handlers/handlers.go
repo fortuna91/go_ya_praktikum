@@ -76,12 +76,12 @@ func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 	}*/
 	if len(items) < 5 {
 		fmt.Printf("Not enough value. Path: %v\n", path)
-		http.Error(w, "Not enough value", http.StatusBadRequest)
+		http.Error(w, "Not enough value", http.StatusNotFound)
 		return
 	}
 	val := items[4]
 	if val == "" {
-		http.Error(w, "Empty value", http.StatusBadRequest)
+		http.Error(w, "Empty value", http.StatusNotFound)
 		return
 	}
 	_, err := strconv.ParseFloat(val, 64)

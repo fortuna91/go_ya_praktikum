@@ -23,9 +23,9 @@ func TestSetGaгgeMetric(t *testing.T) {
 			want: 200,
 		},
 		{
-			name: "case 3. Wrong metric",
+			name: "case 3. Other metric",
 			url:  "gauge/MyMetric/123.0",
-			want: 400,
+			want: 200,
 		},
 		{
 			name: "case 4. Wrong value",
@@ -35,12 +35,12 @@ func TestSetGaгgeMetric(t *testing.T) {
 		{
 			name: "case 5. Wrong value",
 			url:  "gauge/BuckHashSys/",
-			want: 400,
+			want: 404,
 		},
 		{
 			name: "case 6. Wrong value",
 			url:  "gauge/BuckHashSys",
-			want: 400,
+			want: 404,
 		},
 	}
 	for _, tt := range tests {
