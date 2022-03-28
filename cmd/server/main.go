@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/fortuna91/go_praktikum/cmd/server/handlers"
-	"github.com/fortuna91/go_praktikum/cmd/server/server"
+	"github.com/fortuna91/go_ya_praktikum/cmd/server/server"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,6 +32,5 @@ func main() {
 		}
 	}()
 
-	handlers.Counter(handlers.CountChannel)
 	server.NewServer()
 }
