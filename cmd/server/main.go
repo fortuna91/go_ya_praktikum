@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/cmd/server/server"
+	"github.com/fortuna91/go_ya_praktikum/cmd/server/run"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,5 +32,5 @@ func main() {
 		}
 	}()
 
-	server.NewServer()
+	run.NewServer()
 }
