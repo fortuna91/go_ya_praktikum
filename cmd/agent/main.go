@@ -102,7 +102,7 @@ func main() {
 
 	fmt.Println("Start sending metrics...")
 	var i int64 = 0
-	for true {
+	for {
 		i++
 		metrics := GetMetrics(i)
 		time.Sleep(time.Second * 2)
