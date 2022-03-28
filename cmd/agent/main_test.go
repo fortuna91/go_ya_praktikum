@@ -37,14 +37,9 @@ func TestSendRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				// Test request parameters
-				// equals(t, req.URL.String(), "/some/path")
-				// Send response to be tested
 				w.WriteHeader(http.StatusOK)
 			}))
-			// Close the server when test finishes
 			defer server.Close()
-			// client := http.Client{}
 			request, _ := http.NewRequest(http.MethodPost, server.URL+"/update/"+tt.args.metricType+"/"+tt.args.metricName+"/"+tt.args.value, nil)
 
 			responseCode := SendRequest(server.Client(), request)
