@@ -11,22 +11,8 @@ import (
 
 var Metrics = metrics.Metrics{}
 
-var CurrCount int64 = 0
-
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
-
-/*func Counter(c <-chan int64) {
-	for v := range c {
-		fmt.Println("here")
-		currCount += v
-	}
-}*/
-
-func Counter(c int64) {
-	CurrCount += c
-	fmt.Printf("Count is %d\n", CurrCount)
-}
 
 func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got it...")
