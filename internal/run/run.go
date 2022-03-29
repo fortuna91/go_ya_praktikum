@@ -1,9 +1,10 @@
 package run
 
 import (
+	"net/http"
+
 	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"github.com/go-chi/chi/v5"
-	"net/http"
 )
 
 func NewRouter() chi.Router {

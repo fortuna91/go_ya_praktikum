@@ -1,13 +1,14 @@
 package run
 
 import (
-	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
+	"github.com/stretchr/testify/require"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, string) {

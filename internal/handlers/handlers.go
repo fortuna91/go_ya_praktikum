@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
-	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
+
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"github.com/go-chi/chi/v5"
 )
 
 var Metrics = metrics.Metrics{}
@@ -68,7 +70,7 @@ func GetMetric(w http.ResponseWriter, r *http.Request) {
 	val := Metrics.Get(metricType)
 	if len(val) > 0 { // fixme "empty" check
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(val))
+		log.Fatal(w.Write([]byte(val)))
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -99,7 +101,7 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	for _, key := range metricKeys {
 		s = s + fmt.Sprintf(item, key, listMetrics[key])
 	}
-	w.Write([]byte(fmt.Sprintf(form, s)))
+	log.Fatal(w.Write([]byte(fmt.Sprintf(form, s))))
 }
 
 func NotImplemented(w http.ResponseWriter, _ *http.Request) {
