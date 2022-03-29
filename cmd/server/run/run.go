@@ -21,7 +21,11 @@ func NewRouter() chi.Router {
 				w.WriteHeader(http.StatusNotFound)
 			})
 		})
-		r.Post("/{}", handlers.NotImplemented)
+		// fixme maybe rewrite r.NotFound to 501 code?
+		r.Route("/{otherType}/", func(r chi.Router) {
+			r.Post("/{metricName}", handlers.NotImplemented)
+			r.Post("/{metricName}/{value}", handlers.NotImplemented)
+		})
 	})
 	r.Get("/value/{metricType}/{metricName}", handlers.GetMetric)
 	r.Get("/", handlers.ListMetrics)

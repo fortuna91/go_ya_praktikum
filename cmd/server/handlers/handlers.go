@@ -11,7 +11,8 @@ var Metrics = make(map[string]string)
 
 var CurrCount int64 = 0
 
-// var CountChannel = make(chan int64) maybe for feature
+// fixme maybe for feature it has to be channel with mutex
+// var CountChannel = make(chan int64)
 
 /*func Counter(c <-chan int64) {
 	for v := range c {
@@ -88,20 +89,25 @@ func GetMetric(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListMetrics(w http.ResponseWriter, _ *http.Request) {
-	/*var form = `
-	    <html>
-			<head>
-			<title></title>
-			</head>
-			<body>
+	var form = `<html>
+			<table>
+  				<tr>
+    				<td>Name</td>
+    				<td>Value</td>
+  				</tr>
 				%v
-			</body>
-		</html>`*/
+			</table>
+		</html>`
+	var item = `
+		<tr>
+			<td>%v</td>
+			<td>%v</td>
+		</tr>`
 	var s = ""
 	for k, v := range Metrics {
-		s = s + k + "=" + v + "\n"
+		s = s + fmt.Sprintf(item, k, v)
 	}
-	w.Write([]byte(s))
+	w.Write([]byte(fmt.Sprintf(form, s)))
 }
 
 func NotImplemented(w http.ResponseWriter, _ *http.Request) {

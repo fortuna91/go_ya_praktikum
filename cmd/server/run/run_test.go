@@ -169,15 +169,40 @@ func TestSetCountMetric(t *testing.T) {
 }
 
 func TestNotImplemented(t *testing.T) {
-	r := NewRouter()
-	ts := httptest.NewServer(r)
-	defer ts.Close()
+	tests := []struct {
+		name string
+		url  string
+		want int
+	}{
+		{
+			name: "case 1",
+			url:  "/update/unknown/testCounter/100",
+			want: 501,
+		},
+		{
+			name: "case 2",
+			url:  "/update/unknown/testCounter",
+			want: 501,
+		},
+		{
+			name: "case 3",
+			url:  "/update/unknown",
+			want: 501,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewRouter()
+			ts := httptest.NewServer(r)
+			defer ts.Close()
 
-	response, _ := testRequest(t, ts, "POST", "/update/something")
-	defer response.Body.Close()
+			response, _ := testRequest(t, ts, "POST", "/update/unknown/testCounter/100")
+			defer response.Body.Close()
 
-	if response.StatusCode != 501 {
-		t.Errorf("SendRequest() = %v, want %v", response.StatusCode, 501)
+			if response.StatusCode != 501 {
+				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, 501)
+			}
+		})
 	}
 }
 
@@ -247,19 +272,19 @@ func TestListMetrics(t *testing.T) {
 		{
 			name:        "case 1. One metric",
 			currMetrics: map[string]string{"PollCount": "42"},
-			want:        "PollCount=42\n",
+			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>PollCount</td>\n\t\t\t<td>42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
 			statusCode:  200,
 		},
 		{
 			name:        "case 2. Two metrics",
 			currMetrics: map[string]string{"Alloc": "42.42", "PollCount": "42"},
-			want:        "Alloc=42.42\nPollCount=42\n",
+			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>Alloc</td>\n\t\t\t<td>42.42</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>PollCount</td>\n\t\t\t<td>42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
 			statusCode:  200,
 		},
 		{
 			name:        "case 3. No metrics",
 			currMetrics: map[string]string{},
-			want:        "",
+			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t\t</table>\n\t\t</html>",
 			statusCode:  200,
 		},
 	}
