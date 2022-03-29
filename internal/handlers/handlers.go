@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -70,7 +69,11 @@ func GetMetric(w http.ResponseWriter, r *http.Request) {
 	val := Metrics.Get(metricType)
 	if len(val) > 0 { // fixme "empty" check
 		w.WriteHeader(http.StatusOK)
-		log.Fatal(w.Write([]byte(val)))
+		_, err := w.Write([]byte(val))
+		if err != nil {
+			fmt.Printf("Error sending the response: %v\n", err)
+			http.Error(w, "Error sending the response", http.StatusInternalServerError)
+		}
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -101,7 +104,11 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	for _, key := range metricKeys {
 		s = s + fmt.Sprintf(item, key, listMetrics[key])
 	}
-	log.Fatal(w.Write([]byte(fmt.Sprintf(form, s))))
+	_, err := w.Write([]byte(fmt.Sprintf(form, s)))
+	if err != nil {
+		fmt.Printf("Error sending the response: %v\n", err)
+		http.Error(w, "Error sending the response", http.StatusInternalServerError)
+	}
 }
 
 func NotImplemented(w http.ResponseWriter, _ *http.Request) {
