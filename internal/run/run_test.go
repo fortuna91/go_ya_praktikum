@@ -16,8 +16,6 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	
-	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
@@ -257,6 +255,7 @@ func TestGetMetric(t *testing.T) {
 				}
 			}
 			response, body := testRequest(t, ts, "GET", "/value/sometype/"+tt.metricName)
+			defer response.Body.Close()
 			if response.StatusCode != tt.statusCode {
 				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.statusCode)
 			}
@@ -304,6 +303,7 @@ func TestListMetrics(t *testing.T) {
 				handlers.Metrics.Set(k, v)
 			}
 			response, body := testRequest(t, ts, "GET", "/")
+			defer response.Body.Close()
 			if response.StatusCode != tt.statusCode {
 				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.statusCode)
 			}
