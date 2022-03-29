@@ -1,7 +1,7 @@
 package run
 
 import (
-	"github.com/fortuna91/go_ya_praktikum/cmd/server/handlers"
+	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )

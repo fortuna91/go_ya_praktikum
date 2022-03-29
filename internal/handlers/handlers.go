@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
-var Metrics = make(map[string]string)
+var Metrics = metrics.Metrics{}
 
 var CurrCount int64 = 0
 
@@ -49,7 +51,7 @@ func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	metricType := chi.URLParam(r, "metricName")
-	Metrics[metricType] = val
+	Metrics.Set(metricType, val)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -70,19 +72,17 @@ func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Wrong metric value", http.StatusBadRequest)
 		return
 	}
-	// CountChannel <- countVal
-	Counter(countVal)
 	metricType := chi.URLParam(r, "metricName")
-	Metrics[metricType] = strconv.FormatInt(CurrCount, 10)
+	Metrics.UpdateCounter(metricType, countVal)
 	w.WriteHeader(http.StatusOK)
 }
 
 func GetMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricName")
-	val := Metrics[metricType]
+	val := Metrics.Get(metricType)
 	if len(val) > 0 { // fixme "empty" check
-		w.Write([]byte(val))
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(val))
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -103,9 +103,15 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 			<td>%v</td>
 			<td>%v</td>
 		</tr>`
+	listMetrics := Metrics.List()
+	metricKeys := make([]string, 0, len(listMetrics))
+	for k := range listMetrics {
+		metricKeys = append(metricKeys, k)
+	}
+	sort.Strings(metricKeys)
 	var s = ""
-	for k, v := range Metrics {
-		s = s + fmt.Sprintf(item, k, v)
+	for _, key := range metricKeys {
+		s = s + fmt.Sprintf(item, key, listMetrics[key])
 	}
 	w.Write([]byte(fmt.Sprintf(form, s)))
 }

@@ -1,7 +1,7 @@
 package run
 
 import (
-	"github.com/fortuna91/go_ya_praktikum/cmd/server/handlers"
+	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
@@ -76,13 +76,14 @@ func TestSetGaugeMetric(t *testing.T) {
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
+			handlers.Metrics.ResetValues()
 			response, _ := testRequest(t, ts, "POST", "/update/"+tt.url)
 			if response.StatusCode != tt.want {
 				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.want)
 			}
 			if tt.want == 200 {
-				if handlers.Metrics[tt.metricName] != tt.value {
-					t.Errorf("Wrong metric value = %v, want %v", handlers.Metrics[tt.metricName], tt.value)
+				if handlers.Metrics.Get(tt.metricName) != tt.value {
+					t.Errorf("Wrong metric value = %v, want %v", handlers.Metrics.Get(tt.metricName), tt.value)
 				}
 			}
 			defer response.Body.Close()
@@ -148,7 +149,8 @@ func TestSetCountMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// go Counter(CountChannel)
 			if tt.want == 200 {
-				handlers.CurrCount = tt.currentCountVal
+				handlers.Metrics.ResetValues()
+				handlers.Metrics.Set("PollCount", strconv.FormatInt(tt.currentCountVal, 10))
 			}
 			r := NewRouter()
 			ts := httptest.NewServer(r)
@@ -160,8 +162,8 @@ func TestSetCountMetric(t *testing.T) {
 			}
 			defer response.Body.Close()
 			if tt.want == 200 {
-				if handlers.Metrics[tt.metricName] != strconv.FormatInt(tt.count+tt.currentCountVal, 10) {
-					t.Errorf("Wrong currCount = %v, want %v", handlers.Metrics[tt.metricName], tt.count+tt.currentCountVal)
+				if handlers.Metrics.Get(tt.metricName) != strconv.FormatInt(tt.count+tt.currentCountVal, 10) {
+					t.Errorf("Wrong currCount = %v, want %v", handlers.Metrics.Get(tt.metricName), tt.count+tt.currentCountVal)
 				}
 			}
 		})
@@ -230,14 +232,14 @@ func TestGetMetric(t *testing.T) {
 		},
 		{
 			name:        "case 3. Empty metric",
-			metricName:  "PollCount",
-			currMetrics: map[string]string{"Alloc": "42"},
+			metricName:  "HeadAlloc",
+			currMetrics: map[string]string{"Alloc": "42.42"},
 			statusCode:  404,
 		},
 		{
 			name:        "case 4. Several metrics",
 			metricName:  "BuckHashSys",
-			currMetrics: map[string]string{"Alloc": "42", "BuckHashSys": "123.0"},
+			currMetrics: map[string]string{"PollCount": "42", "Alloc": "42.42", "BuckHashSys": "123.0"},
 			want:        "123.0",
 			statusCode:  200,
 		},
@@ -249,7 +251,10 @@ func TestGetMetric(t *testing.T) {
 			defer ts.Close()
 
 			if tt.statusCode == 200 {
-				handlers.Metrics = tt.currMetrics
+				handlers.Metrics.ResetValues()
+				for k, v := range tt.currMetrics {
+					handlers.Metrics.Set(k, v)
+				}
 			}
 			response, body := testRequest(t, ts, "GET", "/value/sometype/"+tt.metricName)
 			if response.StatusCode != tt.statusCode {
@@ -270,21 +275,21 @@ func TestListMetrics(t *testing.T) {
 		statusCode  int
 	}{
 		{
-			name:        "case 1. One metric",
-			currMetrics: map[string]string{"PollCount": "42"},
-			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>PollCount</td>\n\t\t\t<td>42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
-			statusCode:  200,
-		},
-		{
-			name:        "case 2. Two metrics",
-			currMetrics: map[string]string{"Alloc": "42.42", "PollCount": "42"},
-			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>Alloc</td>\n\t\t\t<td>42.42</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>PollCount</td>\n\t\t\t<td>42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
-			statusCode:  200,
-		},
-		{
-			name:        "case 3. No metrics",
+			name:        "case 1. No metrics",
 			currMetrics: map[string]string{},
 			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t\t</table>\n\t\t</html>",
+			statusCode:  200,
+		},
+		{
+			name:        "case 2. One metric",
+			currMetrics: map[string]string{"Alloc": "42.42"},
+			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>Alloc</td>\n\t\t\t<td>42.42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
+			statusCode:  200,
+		},
+		{
+			name:        "case 3. Two metrics",
+			currMetrics: map[string]string{"Alloc": "42.42", "PollCount": "42"},
+			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>Alloc</td>\n\t\t\t<td>42.42</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>PollCount</td>\n\t\t\t<td>42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
 			statusCode:  200,
 		},
 	}
@@ -294,7 +299,10 @@ func TestListMetrics(t *testing.T) {
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
-			handlers.Metrics = tt.currMetrics
+			handlers.Metrics.ResetValues()
+			for k, v := range tt.currMetrics {
+				handlers.Metrics.Set(k, v)
+			}
 			response, body := testRequest(t, ts, "GET", "/")
 			if response.StatusCode != tt.statusCode {
 				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.statusCode)

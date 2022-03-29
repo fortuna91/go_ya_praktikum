@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/cmd/server/run"
+	"github.com/fortuna91/go_ya_praktikum/internal/run"
 	"net/http"
 	"os"
 	"os/signal"
