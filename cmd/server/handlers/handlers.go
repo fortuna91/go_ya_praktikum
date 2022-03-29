@@ -2,46 +2,14 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
-/*var gaugeMetrics = []string{
-	"Alloc",
-	"BuckHashSys",
-	"Frees",
-	"GCCPUFraction",
-	"GCSys",
-	"HeapAlloc",
-	"HeapIdle",
-	"HeapInuse",
-	"HeapObjects",
-	"HeapReleased",
-	"HeapSys",
-	"LastGC",
-	"Lookups",
-	"MCacheInuse",
-	"MCacheSys",
-	"MSpanInuse",
-	"MSpanSys",
-	"Mallocs",
-	"NextGC",
-	"NumForcedGC",
-	"NumGC",
-	"OtherSys",
-	"PauseTotalNs",
-	"StackInuse",
-	"StackSys",
-	"Sys",
-	"TotalAlloc",
-	"PollCount",
-	"RandomValue",
-}*/
+var Metrics = make(map[string]string)
 
-// var counterMetric = "PollCount"
-
-var currCount int64 = 0
+var CurrCount int64 = 0
 
 // var CountChannel = make(chan int64) maybe for feature
 
@@ -53,33 +21,22 @@ var currCount int64 = 0
 }*/
 
 func Counter(c int64) {
-	currCount += c
-	fmt.Printf("Count is %d\n", currCount)
-}
-
-func contains(a []string, x string) bool {
-	for _, v := range a {
-		if x == v {
-			return true
-		}
-	}
-	return false
+	CurrCount += c
+	fmt.Printf("Count is %d\n", CurrCount)
 }
 
 func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got it...")
-	path := r.URL.Path
-	items := strings.Split(path, "/")
+	val := chi.URLParam(r, "value")
 	/*if !contains(gaugeMetrics, items[3]) {
 		http.Error(w, "Unknown metric", http.StatusBadRequest)
 		return
 	}*/
-	if len(items) < 5 {
+	/*if len(items) < 5 {
 		fmt.Printf("Not enough value. Path: %v\n", path)
 		http.Error(w, "Not enough value", http.StatusNotFound)
 		return
-	}
-	val := items[4]
+	}*/
 	if val == "" {
 		http.Error(w, "Empty value", http.StatusNotFound)
 		return
@@ -90,29 +47,23 @@ func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Wrong metric value", http.StatusBadRequest)
 		return
 	}
+	metricType := chi.URLParam(r, "metricName")
+	Metrics[metricType] = val
 	w.WriteHeader(http.StatusOK)
 }
 
 func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 	// go Counter(CountChannel)
-	path := r.URL.Path
-	items := strings.Split(path, "/")
+	val := chi.URLParam(r, "value")
 	/*if items[3] != counterMetric {
 		http.Error(w, "Unknown metric", http.StatusBadRequest)
 		return
 	}*/
-	// fixme: the same code
-	if len(items) < 5 {
-		fmt.Printf("Not enough value. Path: %v\n", path)
-		http.Error(w, "Not enough value", http.StatusNotFound)
-		return
-	}
-	val := items[4]
 	if val == "" {
 		http.Error(w, "Empty value", http.StatusNotFound)
 		return
 	}
-	countVal, err := strconv.ParseInt(items[4], 10, 64)
+	countVal, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
 		fmt.Printf("Parse error: %v\n", err)
 		http.Error(w, "Wrong metric value", http.StatusBadRequest)
@@ -120,9 +71,39 @@ func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 	}
 	// CountChannel <- countVal
 	Counter(countVal)
+	metricType := chi.URLParam(r, "metricName")
+	Metrics[metricType] = strconv.FormatInt(CurrCount, 10)
 	w.WriteHeader(http.StatusOK)
 }
 
-func NotImplemented(w http.ResponseWriter, r *http.Request) {
+func GetMetric(w http.ResponseWriter, r *http.Request) {
+	metricType := chi.URLParam(r, "metricName")
+	val := Metrics[metricType]
+	if len(val) > 0 { // fixme "empty" check
+		w.Write([]byte(val))
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func ListMetrics(w http.ResponseWriter, _ *http.Request) {
+	/*var form = `
+	    <html>
+			<head>
+			<title></title>
+			</head>
+			<body>
+				%v
+			</body>
+		</html>`*/
+	var s = ""
+	for k, v := range Metrics {
+		s = s + k + "=" + v + "\n"
+	}
+	w.Write([]byte(s))
+}
+
+func NotImplemented(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }

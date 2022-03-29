@@ -1,19 +1,29 @@
 package run
 
 import (
-	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/cmd/server/handlers"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
-func NewServer() {
-	http.HandleFunc("/update/gauge/", handlers.SetGaugeMetric)
-	http.HandleFunc("/update/counter/", handlers.SetCounterMetric)
-	http.HandleFunc("/update/", handlers.NotImplemented)
-
-	server := &http.Server{
-		Addr: "127.0.0.1:8080",
-	}
-	fmt.Println("Start server")
-	server.ListenAndServe()
+func NewRouter() chi.Router {
+	r := chi.NewRouter()
+	r.Route("/update", func(r chi.Router) {
+		r.Route("/gauge", func(r chi.Router) {
+			r.Post("/{metricName}/{value}", handlers.SetGaugeMetric)
+			r.Post("/{}", func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			})
+		})
+		r.Route("/counter", func(r chi.Router) {
+			r.Post("/{metricName}/{value}", handlers.SetCounterMetric)
+			r.Post("/{}", func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			})
+		})
+		r.Post("/{}", handlers.NotImplemented)
+	})
+	r.Get("/value/{metricType}/{metricName}", handlers.GetMetric)
+	r.Get("/", handlers.ListMetrics)
+	return r
 }

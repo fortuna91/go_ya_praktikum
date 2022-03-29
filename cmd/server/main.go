@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/cmd/server/run"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,5 +33,7 @@ func main() {
 		}
 	}()
 
-	run.NewServer()
+	r := run.NewRouter()
+	fmt.Println("Start server")
+	http.ListenAndServe("127.0.0.1:8080", r)
 }
