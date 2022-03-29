@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {
+func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, string) {
 	req, err := http.NewRequest(method, ts.URL+path, nil)
 	require.NoError(t, err)
 
@@ -20,7 +20,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.
 	respBody, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	return resp, string(respBody)
+	return resp.StatusCode, string(respBody)
 }
 
 func TestSetGaugeMetric(t *testing.T) {
@@ -75,16 +75,15 @@ func TestSetGaugeMetric(t *testing.T) {
 			defer ts.Close()
 
 			handlers.Metrics.ResetValues()
-			response, _ := testRequest(t, ts, "POST", "/update/"+tt.url)
-			if response.StatusCode != tt.want {
-				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.want)
+			responseCode, _ := testRequest(t, ts, "POST", "/update/"+tt.url)
+			if responseCode != tt.want {
+				t.Errorf("SendRequest() = %v, want %v", responseCode, tt.want)
 			}
 			if tt.want == 200 {
 				if handlers.Metrics.Get(tt.metricName) != tt.value {
 					t.Errorf("Wrong metric value = %v, want %v", handlers.Metrics.Get(tt.metricName), tt.value)
 				}
 			}
-			defer response.Body.Close()
 		})
 	}
 }
@@ -154,11 +153,10 @@ func TestSetCountMetric(t *testing.T) {
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
-			response, _ := testRequest(t, ts, "POST", "/update/"+tt.url)
-			if response.StatusCode != tt.want {
-				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.want)
+			responseCode, _ := testRequest(t, ts, "POST", "/update/"+tt.url)
+			if responseCode != tt.want {
+				t.Errorf("SendRequest() = %v, want %v", responseCode, tt.want)
 			}
-			defer response.Body.Close()
 			if tt.want == 200 {
 				if handlers.Metrics.Get(tt.metricName) != strconv.FormatInt(tt.count+tt.currentCountVal, 10) {
 					t.Errorf("Wrong currCount = %v, want %v", handlers.Metrics.Get(tt.metricName), tt.count+tt.currentCountVal)
@@ -196,11 +194,10 @@ func TestNotImplemented(t *testing.T) {
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
-			response, _ := testRequest(t, ts, "POST", "/update/unknown/testCounter/100")
-			defer response.Body.Close()
+			responseCode, _ := testRequest(t, ts, "POST", "/update/unknown/testCounter/100")
 
-			if response.StatusCode != 501 {
-				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, 501)
+			if responseCode != 501 {
+				t.Errorf("SendRequest() = %v, want %v", responseCode, 501)
 			}
 		})
 	}
@@ -254,10 +251,9 @@ func TestGetMetric(t *testing.T) {
 					handlers.Metrics.Set(k, v)
 				}
 			}
-			response, body := testRequest(t, ts, "GET", "/value/sometype/"+tt.metricName)
-			defer response.Body.Close()
-			if response.StatusCode != tt.statusCode {
-				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.statusCode)
+			responseCode, body := testRequest(t, ts, "GET", "/value/sometype/"+tt.metricName)
+			if responseCode != tt.statusCode {
+				t.Errorf("SendRequest() = %v, want %v", responseCode, tt.statusCode)
 			}
 			if body != tt.want {
 				t.Errorf("Wrong response = %v, want %v", body, tt.want)
@@ -302,10 +298,9 @@ func TestListMetrics(t *testing.T) {
 			for k, v := range tt.currMetrics {
 				handlers.Metrics.Set(k, v)
 			}
-			response, body := testRequest(t, ts, "GET", "/")
-			defer response.Body.Close()
-			if response.StatusCode != tt.statusCode {
-				t.Errorf("SendRequest() = %v, want %v", response.StatusCode, tt.statusCode)
+			responseCode, body := testRequest(t, ts, "GET", "/")
+			if responseCode != tt.statusCode {
+				t.Errorf("SendRequest() = %v, want %v", responseCode, tt.statusCode)
 			}
 			if body != tt.want {
 				t.Errorf("Wrong response = %v, want %v", body, tt.want)
