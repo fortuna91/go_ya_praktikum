@@ -81,7 +81,7 @@ func GetMetric(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListMetrics(w http.ResponseWriter, _ *http.Request) {
-	const tmplHtml = `<!DOCTYPE html>
+	const tmplHTML = `<!DOCTYPE html>
 	<html>
 	<table>
 	<tr>
@@ -106,7 +106,7 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 		listMetrics = append(listMetrics, dictMetrics[k])
 	}
 
-	tmpl, err := template.New("index").Parse(tmplHtml)
+	tmpl, err := template.New("index").Parse(tmplHTML)
 	if err != nil {
 		http.Error(w, "Error getting the template", http.StatusInternalServerError)
 	}
