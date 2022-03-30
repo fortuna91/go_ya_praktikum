@@ -75,11 +75,13 @@ func SendMetrics(metrics *[]Metric) {
 
 func RunAgent() {
 	fmt.Println("Start sending metrics...")
+
+	ticker := time.NewTicker(2 * time.Second)
 	var i int64 = 0
 	for {
+		<-ticker.C
 		i++
 		metrics := GetMetrics(i)
-		time.Sleep(time.Second * 2)
 		if i%5 == 0 {
 			SendMetrics(&metrics)
 			// set i = 0 ??

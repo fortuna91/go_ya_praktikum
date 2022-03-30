@@ -6,60 +6,66 @@ import (
 	"sync"
 )
 
+type Metric struct {
+	Name  string
+	Type  string
+	Value string
+}
+
 type Metrics struct {
-	values map[string]string
-	lock   sync.RWMutex
+	values map[string]Metric
+	sync.RWMutex
 }
 
 func (metrics *Metrics) Set(k string, v string) {
-	metrics.lock.Lock()
-	defer metrics.lock.Unlock()
+	metrics.Lock()
+	defer metrics.Unlock()
 	if metrics.values == nil {
-		metrics.values = make(map[string]string)
+		metrics.values = make(map[string]Metric)
 	}
-	metrics.values[k] = v
+	metrics.values[k] = Metric{Name: k, Value: v}
 }
 
 func (metrics *Metrics) Get(k string) string {
-	metrics.lock.Lock()
-	defer metrics.lock.Unlock()
+	metrics.Lock()
+	defer metrics.Unlock()
 	if metrics.values == nil {
 		return ""
 	}
-	return metrics.values[k]
+	return metrics.values[k].Value
 }
 
 func (metrics *Metrics) UpdateCounter(k string, v int64) string {
-	metrics.lock.Lock()
-	defer metrics.lock.Unlock()
+	metrics.Lock()
+	defer metrics.Unlock()
 	if metrics.values == nil {
-		metrics.values = make(map[string]string)
-		metrics.values[k] = strconv.FormatInt(v, 10)
-	} else if len(metrics.values[k]) == 0 { // fixme "empty" check
-		metrics.values[k] = strconv.FormatInt(v, 10)
+		metrics.values = make(map[string]Metric)
+		metrics.values[k] = Metric{Name: k, Value: strconv.FormatInt(v, 10)}
+	} else if metrics.values[k] == (Metric{}) { // fixme "empty" check
+		metrics.values[k] = Metric{Name: k, Value: strconv.FormatInt(v, 10)}
 	} else {
-		currVal, err := strconv.ParseInt(metrics.values[k], 10, 64)
+		currVal, err := strconv.ParseInt(metrics.values[k].Value, 10, 64)
 		if err != nil {
 			panic(fmt.Sprintf("Wrong current value of conter metric: %v=%v", k, metrics.values[k]))
 		}
 		newVal := currVal + v
-		metrics.values[k] = strconv.FormatInt(newVal, 10)
+		metrics.values[k] = Metric{Name: k, Value: strconv.FormatInt(newVal, 10)}
 	}
-	return metrics.values[k]
+	return metrics.values[k].Value
 }
 
-func (metrics *Metrics) List() map[string]string {
-	metrics.lock.Lock()
-	defer metrics.lock.Unlock()
+func (metrics *Metrics) List() map[string]Metric {
+	metrics.Lock()
+	defer metrics.Unlock()
 	if metrics.values == nil {
-		return map[string]string{}
+		return map[string]Metric{}
 	}
 	return metrics.values
 }
 
 func (metrics *Metrics) ResetValues() {
-	metrics.lock.Lock()
-	defer metrics.lock.Unlock()
+	metrics.Lock()
+	defer metrics.Unlock()
 	if metrics.values != nil {
 		metrics.values = nil
 	}

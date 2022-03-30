@@ -275,19 +275,19 @@ func TestListMetrics(t *testing.T) {
 		{
 			name:        "case 1. No metrics",
 			currMetrics: map[string]string{},
-			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t\t</table>\n\t\t</html>",
+			want:        "<!DOCTYPE html>\n\t<html>\n\t<table>\n\t<tr>\n\t<td>Name</td>\n\t<td>Value</td>\n\t</tr>\n\t</table>\n\t</html>",
 			statusCode:  200,
 		},
 		{
 			name:        "case 2. One metric",
 			currMetrics: map[string]string{"Alloc": "42.42"},
-			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>Alloc</td>\n\t\t\t<td>42.42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
+			want:        "<!DOCTYPE html>\n\t<html>\n\t<table>\n\t<tr>\n\t<td>Name</td>\n\t<td>Value</td>\n\t</tr>\n\t<tr>\n\t<td>Alloc</td>\n\t<td>42.42</td>\n\t</tr>\n\t</table>\n\t</html>",
 			statusCode:  200,
 		},
 		{
 			name:        "case 3. Two metrics",
 			currMetrics: map[string]string{"Alloc": "42.42", "PollCount": "42"},
-			want:        "<html>\n\t\t\t<table>\n  \t\t\t\t<tr>\n    \t\t\t\t<td>Name</td>\n    \t\t\t\t<td>Value</td>\n  \t\t\t\t</tr>\n\t\t\t\t\n\t\t<tr>\n\t\t\t<td>Alloc</td>\n\t\t\t<td>42.42</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>PollCount</td>\n\t\t\t<td>42</td>\n\t\t</tr>\n\t\t\t</table>\n\t\t</html>",
+			want:        "<!DOCTYPE html>\n\t<html>\n\t<table>\n\t<tr>\n\t<td>Name</td>\n\t<td>Value</td>\n\t</tr>\n\t<tr>\n\t<td>Alloc</td>\n\t<td>42.42</td>\n\t</tr>\n\t<tr>\n\t<td>PollCount</td>\n\t<td>42</td>\n\t</tr>\n\t</table>\n\t</html>",
 			statusCode:  200,
 		},
 	}

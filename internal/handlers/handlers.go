@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"sort"
 	"strconv"
@@ -80,34 +81,38 @@ func GetMetric(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListMetrics(w http.ResponseWriter, _ *http.Request) {
-	var form = `<html>
-			<table>
-  				<tr>
-    				<td>Name</td>
-    				<td>Value</td>
-  				</tr>
-				%v
-			</table>
-		</html>`
-	var item = `
-		<tr>
-			<td>%v</td>
-			<td>%v</td>
-		</tr>`
-	listMetrics := Metrics.List()
-	metricKeys := make([]string, 0, len(listMetrics))
-	for k := range listMetrics {
+	const tmplHtml = `<!DOCTYPE html>
+	<html>
+	<table>
+	<tr>
+	<td>Name</td>
+	<td>Value</td>
+	</tr>{{range . }}
+	<tr>
+	<td>{{ .Name }}</td>
+	<td>{{ .Value }}</td>
+	</tr>{{end}}
+	</table>
+	</html>`
+
+	dictMetrics := Metrics.List()
+	metricKeys := make([]string, 0, len(dictMetrics))
+	for k := range dictMetrics {
 		metricKeys = append(metricKeys, k)
 	}
 	sort.Strings(metricKeys)
-	var s = ""
-	for _, key := range metricKeys {
-		s = s + fmt.Sprintf(item, key, listMetrics[key])
+	listMetrics := make([]metrics.Metric, 0, len(dictMetrics))
+	for _, k := range metricKeys {
+		listMetrics = append(listMetrics, dictMetrics[k])
 	}
-	_, err := w.Write([]byte(fmt.Sprintf(form, s)))
+
+	tmpl, err := template.New("index").Parse(tmplHtml)
 	if err != nil {
-		fmt.Printf("Error sending the response: %v\n", err)
-		http.Error(w, "Error sending the response", http.StatusInternalServerError)
+		http.Error(w, "Error getting the template", http.StatusInternalServerError)
+	}
+	errEx := tmpl.Execute(w, listMetrics)
+	if errEx != nil {
+		fmt.Printf("Error sending the response: %v\n", errEx)
 	}
 }
 
