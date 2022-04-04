@@ -60,7 +60,7 @@ func GetMetric(w http.ResponseWriter, r *http.Request) {
 	if metric != nil {
 		var val = ""
 		if metric.MType == metrics.Gauge {
-			val = strconv.FormatFloat(*metric.Value, 'f', 2, 64)
+			val = strconv.FormatFloat(*metric.Value, 'f', 3, 64)
 		} else if metric.MType == metrics.Counter {
 			val = strconv.FormatInt(*metric.Delta, 10)
 		}

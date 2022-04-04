@@ -234,7 +234,7 @@ func TestGetMetric(t *testing.T) {
 			metricName:  "Alloc",
 			metricType:  metrics.Gauge,
 			currMetrics: map[string]string{"Alloc": "42.42"},
-			want:        "42.42",
+			want:        "42.420",
 			statusCode:  200,
 		},
 		{
@@ -249,7 +249,7 @@ func TestGetMetric(t *testing.T) {
 			metricName:  "BuckHashSys",
 			metricType:  metrics.Gauge,
 			currMetrics: map[string]string{"PollCount": "42", "Alloc": "42.42", "BuckHashSys": "123.01"},
-			want:        "123.01",
+			want:        "123.010",
 			statusCode:  200,
 		},
 	}
@@ -276,7 +276,7 @@ func TestGetMetric(t *testing.T) {
 				t.Errorf("SendRequest() = %v, want %v", responseCode, tt.statusCode)
 			}
 			if string(body) != tt.want {
-				t.Errorf("Wrong response = %v, want %v", body, tt.want)
+				t.Errorf("Wrong response = %v, want %v", string(body), tt.want)
 			}
 		})
 	}

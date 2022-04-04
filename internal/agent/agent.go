@@ -78,7 +78,7 @@ func GetMetrics(count int64) []*metrics.Metric {
 }
 
 func SendRequest(client *http.Client, request *http.Request) int {
-	request.Header.Set("Content-Type", "text/plain")
+	request.Header.Set("Content-Type", "application/json")
 	response, err := client.Do(request)
 	if err != nil {
 		fmt.Println(err)
