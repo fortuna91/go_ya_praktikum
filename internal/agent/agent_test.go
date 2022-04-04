@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
 func TestSendRequest(t *testing.T) {
@@ -20,17 +22,17 @@ func TestSendRequest(t *testing.T) {
 	}{
 		{
 			name: "case 1. Alloc 200",
-			args: args{metricType: "gauge", metricName: "Alloc", value: "123"},
+			args: args{metricType: metrics.Gauge, metricName: "Alloc", value: "123"},
 			want: 200,
 		},
 		{
 			name: "case 2. BuckHashSys 200",
-			args: args{metricType: "gauge", metricName: "BuckHashSys", value: "123.0"},
+			args: args{metricType: metrics.Gauge, metricName: "BuckHashSys", value: "123.0"},
 			want: 200,
 		},
 		{
 			name: "case 3. Wrong metric",
-			args: args{metricType: "gauge", metricName: "MyMetric", value: "123.0"},
+			args: args{metricType: metrics.Gauge, metricName: "MyMetric", value: "123.0"},
 			want: 200,
 		},
 	}
