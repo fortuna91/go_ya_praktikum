@@ -164,6 +164,10 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	metricRequest := metrics.Metric{}
 	json.Unmarshal(respBody, &metricRequest)
+	if len(metricRequest.ID) == 0 {
+		http.Error(w, "Empty metric ID", http.StatusBadRequest)
+		return
+	}
 	metric := Metrics.Get(metricRequest.ID)
 	if metric != nil {
 		bodyResp, err := json.Marshal(metric)

@@ -31,7 +31,7 @@ func NewRouter() chi.Router {
 	})
 	r.Route("/value", func(r chi.Router) {
 		r.Get("/{metricType}/{metricName}", handlers.GetMetric)
-		r.Post("/some", handlers.GetMetricJSON)
+		r.Post("/", handlers.GetMetricJSON)
 	})
 	r.Get("/", handlers.ListMetrics)
 	return r

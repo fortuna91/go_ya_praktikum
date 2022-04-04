@@ -503,6 +503,12 @@ func TestGetMetricJSON(t *testing.T) {
 			wantValue:   123.01,
 			statusCode:  200,
 		},
+		{
+			name:        "case 5. Empty metric name",
+			metricType:  metrics.Gauge,
+			currMetrics: map[string]string{"Alloc": "42.42"},
+			statusCode:  400,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
