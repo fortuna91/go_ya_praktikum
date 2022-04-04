@@ -264,7 +264,7 @@ func TestGetMetric(t *testing.T) {
 				for k, v := range tt.currMetrics {
 					if tt.metricType == metrics.Gauge {
 						val, _ := strconv.ParseFloat(v, 64)
-						handlers.Metrics.SetGauge(k, val)
+						handlers.Metrics.SetGauge(k, &val)
 					} else {
 						val, _ := strconv.ParseInt(v, 10, 64)
 						handlers.Metrics.UpdateCounter(k, val)
@@ -317,7 +317,7 @@ func TestListMetrics(t *testing.T) {
 			handlers.Metrics.ResetValues()
 			for k, v := range tt.currMetrics {
 				val, _ := strconv.ParseFloat(v, 64)
-				handlers.Metrics.SetGauge(k, val)
+				handlers.Metrics.SetGauge(k, &val)
 			}
 			responseCode, body := testRequest(t, ts, "GET", "/", nil)
 			if responseCode != tt.statusCode {
@@ -515,7 +515,7 @@ func TestGetMetricJSON(t *testing.T) {
 				for k, v := range tt.currMetrics {
 					if tt.metricType == metrics.Gauge {
 						val, _ := strconv.ParseFloat(v, 64)
-						handlers.Metrics.SetGauge(k, val)
+						handlers.Metrics.SetGauge(k, &val)
 					} else {
 						val, _ := strconv.ParseInt(v, 10, 64)
 						handlers.Metrics.UpdateCounter(k, val)

@@ -20,13 +20,13 @@ type Metrics struct {
 	sync.RWMutex
 }
 
-func (metrics *Metrics) SetGauge(id string, val float64) {
+func (metrics *Metrics) SetGauge(id string, val *float64) {
 	metrics.Lock()
 	defer metrics.Unlock()
 	if metrics.values == nil {
 		metrics.values = make(map[string]*Metric)
 	}
-	metrics.values[id] = &Metric{ID: id, MType: Gauge, Value: &val}
+	metrics.values[id] = &Metric{ID: id, MType: Gauge, Value: val}
 }
 
 func (metrics *Metrics) Get(id string) *Metric {

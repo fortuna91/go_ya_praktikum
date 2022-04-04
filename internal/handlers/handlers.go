@@ -32,7 +32,7 @@ func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	metricName := chi.URLParam(r, "metricName")
-	Metrics.SetGauge(metricName, floatVal)
+	Metrics.SetGauge(metricName, &floatVal)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -93,7 +93,6 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	</html>`
 
 	dictMetrics := Metrics.List()
-	fmt.Println(dictMetrics)
 	metricKeys := make([]string, 0, len(dictMetrics))
 	for k := range dictMetrics {
 		metricKeys = append(metricKeys, k)
@@ -134,13 +133,14 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric id", http.StatusBadRequest)
 		return
 	}
+	fmt.Printf("Got %v...\n", metricRequest.ID)
 	w.Header().Set("Content-Type", "application/json")
 	if metricRequest.MType == metrics.Gauge {
 		if metricRequest.Value == nil {
 			http.Error(w, "Empty metric value", http.StatusBadRequest)
 			return
 		}
-		Metrics.SetGauge(metricRequest.ID, *metricRequest.Value)
+		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
 		if metricRequest.Delta == nil {
@@ -165,7 +165,6 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	metricRequest := metrics.Metric{}
 	json.Unmarshal(respBody, &metricRequest)
 	metric := Metrics.Get(metricRequest.ID)
-
 	if metric != nil {
 		bodyResp, err := json.Marshal(metric)
 		if err != nil {
@@ -174,12 +173,13 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
 		_, errBody := w.Write(bodyResp)
 		if errBody != nil {
 			fmt.Printf("Error sending the response: %v\n", errBody)
 			http.Error(w, "Error sending the response", http.StatusInternalServerError)
+			return
 		}
+		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}

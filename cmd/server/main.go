@@ -27,6 +27,7 @@ func main() {
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)
 		if err != nil {
+
 			log.Fatal(err)
 		}
 		serverStopCtx()
