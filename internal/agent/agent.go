@@ -112,14 +112,13 @@ func SendMetrics(metricsList *[]*metrics.Metric) {
 		if responseCode != 200 {
 			fmt.Printf("Error in request for %v: response code: %d", m.ID, responseCode)
 		}
-
 		/*m2 := metrics.Metric{ID: m.ID, MType: m.MType}
 		b2, _ := json.Marshal(m2)
-		r2, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/value/some", bytes.NewReader(b2))
+		r2, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/value/", bytes.NewReader(b2))
 		_, responseBody := SendRequest2(&client, r2)
 		metricRequest := metrics.Metric{}
 		json.Unmarshal(responseBody, &metricRequest)
-		if metricRequest.MType == metrics.Gauge {
+		if m.MType == metrics.Gauge {
 			fmt.Printf("%v -> %v\n", *m.Value, *metricRequest.Value)
 		}*/
 	}
@@ -135,8 +134,8 @@ func RunAgent() {
 		i++
 		metrics := GetMetrics(i)
 		if i%2 == 0 {
-			SendMetrics(&metrics)
 			fmt.Println("Send metrics...")
+			SendMetrics(&metrics)
 			// set i = 0 ??
 		}
 	}
