@@ -129,12 +129,11 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	metricRequest := metrics.Metric{}
 	json.Unmarshal(respBody, &metricRequest)
-	fmt.Printf("SETT %v", metricRequest)
 	if len(metricRequest.ID) == 0 {
 		http.Error(w, "Empty metric id", http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("Got %v...\n", metricRequest.ID)
+	fmt.Printf("Set %v...\n", metricRequest.ID)
 	w.Header().Set("Content-Type", "application/json")
 	if metricRequest.MType == metrics.Gauge {
 		if metricRequest.Value == nil {
@@ -152,6 +151,15 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Error(w, "Unknown metric type", http.StatusBadRequest)
+		return
+	}
+
+	metric := metrics.Metric{}
+	bodyResp, err := json.Marshal(metric)
+	_, errBody := w.Write(bodyResp)
+	if errBody != nil {
+		fmt.Printf("Error sending the response: %v\n", errBody)
+		http.Error(w, "Error sending the response", http.StatusInternalServerError)
 	}
 }
 
@@ -165,7 +173,6 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	metricRequest := metrics.Metric{}
 	json.Unmarshal(respBody, &metricRequest)
-	fmt.Printf("GETT %v", metricRequest)
 	if len(metricRequest.ID) == 0 {
 		http.Error(w, "Empty metric ID", http.StatusBadRequest)
 		return
@@ -181,6 +188,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, errBody := w.Write(bodyResp)
+		fmt.Printf("GETT %v, %v\n", metric, bodyResp)
 		if errBody != nil {
 			fmt.Printf("Error sending the response: %v\n", errBody)
 			http.Error(w, "Error sending the response", http.StatusInternalServerError)
