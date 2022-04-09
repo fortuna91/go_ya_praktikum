@@ -81,9 +81,7 @@ func SendRequest(client *http.Client, request *http.Request) int {
 	request.Header.Set("Content-Type", "application/json")
 	response, err := client.Do(request)
 	if err != nil {
-		fmt.Println("AGENT ERROR!!!")
 		fmt.Println(err)
-		fmt.Println(response)
 		return 0
 	}
 	defer response.Body.Close()

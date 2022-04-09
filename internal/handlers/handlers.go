@@ -129,6 +129,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	metricRequest := metrics.Metric{}
 	json.Unmarshal(respBody, &metricRequest)
+	fmt.Printf("SETT %v", metricRequest)
 	if len(metricRequest.ID) == 0 {
 		http.Error(w, "Empty metric id", http.StatusBadRequest)
 		return
@@ -164,6 +165,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	metricRequest := metrics.Metric{}
 	json.Unmarshal(respBody, &metricRequest)
+	fmt.Printf("GETT %v", metricRequest)
 	if len(metricRequest.ID) == 0 {
 		http.Error(w, "Empty metric ID", http.StatusBadRequest)
 		return
