@@ -84,7 +84,7 @@ func SendRequest(client *http.Client, request *http.Request) int {
 		fmt.Println("AGENT ERROR!!!")
 		fmt.Println(err)
 		fmt.Println(response)
-		return 500
+		return 0
 	}
 	defer response.Body.Close()
 	return response.StatusCode

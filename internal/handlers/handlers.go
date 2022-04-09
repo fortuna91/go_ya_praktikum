@@ -177,13 +177,13 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		_, errBody := w.Write(bodyResp)
 		if errBody != nil {
 			fmt.Printf("Error sending the response: %v\n", errBody)
 			http.Error(w, "Error sending the response", http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
