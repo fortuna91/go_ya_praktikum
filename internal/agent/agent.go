@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -82,21 +81,10 @@ func SendRequest(client *http.Client, request *http.Request) int {
 	response, err := client.Do(request)
 	if err != nil {
 		fmt.Println(err)
-		return 0
+		return -1
 	}
 	defer response.Body.Close()
 	return response.StatusCode
-}
-
-func SendRequest2(client *http.Client, request *http.Request) (int, []byte) {
-	request.Header.Set("Content-Type", "application/json")
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer response.Body.Close()
-	respBody, _ := ioutil.ReadAll(response.Body)
-	return response.StatusCode, respBody
 }
 
 func SendMetrics(metricsList *[]*metrics.Metric) {
@@ -113,15 +101,6 @@ func SendMetrics(metricsList *[]*metrics.Metric) {
 		if responseCode != 200 {
 			fmt.Printf("Error in request for %v: response code: %d", m.ID, responseCode)
 		}
-		/*m2 := metrics.Metric{ID: m.ID, MType: m.MType}
-		b2, _ := json.Marshal(m2)
-		r2, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/value/", bytes.NewReader(b2))
-		_, responseBody := SendRequest2(&client, r2)
-		metricRequest := metrics.Metric{}
-		json.Unmarshal(responseBody, &metricRequest)
-		if m.MType == metrics.Gauge {
-			fmt.Printf("%v -> %v\n", *m.Value, *metricRequest.Value)
-		}*/
 	}
 }
 
