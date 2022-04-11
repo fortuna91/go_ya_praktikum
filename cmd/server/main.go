@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/caarlos0/env/v6"
 	"log"
 	"net/http"
 	"os"
@@ -14,8 +15,14 @@ import (
 )
 
 func main() {
+	var config Config
+	err := env.Parse(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	r := run.NewRouter()
-	server := &http.Server{Addr: "127.0.0.1:8080", Handler: r}
+	server := &http.Server{Addr: config.Address, Handler: r}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan,
@@ -35,7 +42,7 @@ func main() {
 	}()
 
 	fmt.Println("Start server")
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

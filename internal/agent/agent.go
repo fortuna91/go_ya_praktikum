@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/caarlos0/env/v6"
+	"log"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -87,16 +89,15 @@ func SendRequest(client *http.Client, request *http.Request) int {
 	return response.StatusCode
 }
 
-func SendMetrics(metricsList *[]*metrics.Metric) {
+func SendMetrics(metricsList *[]*metrics.Metric, config Config) {
 	client := http.Client{}
 	for _, m := range *metricsList {
-		// request, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/update/"+m.metricType+"/"+m.metricName+"/"+m.value, nil)
 		body, err := json.Marshal(m)
 		if err != nil {
 			fmt.Printf("Cannot convert Metric to JSON: %v", err)
 			continue
 		}
-		request, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/update", bytes.NewReader(body))
+		request, _ := http.NewRequest(http.MethodPost, "http://"+config.Address+"/update", bytes.NewReader(body))
 		responseCode := SendRequest(&client, request)
 		if responseCode != 200 {
 			fmt.Printf("Error in request for %v: response code: %d", m.ID, responseCode)
@@ -107,16 +108,38 @@ func SendMetrics(metricsList *[]*metrics.Metric) {
 func RunAgent() {
 	fmt.Println("Start sending metrics...")
 
-	ticker := time.NewTicker(2 * time.Second)
-	var i int64 = 0
-	for {
-		<-ticker.C
-		i++
-		metrics := GetMetrics(i)
-		if i%2 == 0 {
+	var config Config
+	err := env.Parse(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pollTicker := time.NewTicker(config.PolInterval)
+	reportTicker := time.NewTicker(config.ReportInterval)
+	ch := make(chan []*metrics.Metric)
+
+	go func() {
+		for {
+			<-ch
+		}
+	}()
+
+	go func() {
+		for {
+			<-reportTicker.C
+			metrics := <-ch
 			fmt.Println("Send metrics...")
-			SendMetrics(&metrics)
-			// set i = 0 ??
+			SendMetrics(&metrics, config)
+		}
+	}()
+
+	for {
+		var i int64 = 0
+		for {
+			<-pollTicker.C
+			i++
+			metrics := GetMetrics(i)
+			ch <- metrics
 		}
 	}
 }

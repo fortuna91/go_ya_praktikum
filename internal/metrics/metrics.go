@@ -17,12 +17,12 @@ type Metric struct {
 
 type Metrics struct {
 	values map[string]*Metric
-	sync.RWMutex
+	mtx    sync.RWMutex
 }
 
 func (metrics *Metrics) SetGauge(id string, val *float64) {
-	metrics.Lock()
-	defer metrics.Unlock()
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
 		metrics.values = make(map[string]*Metric)
 	}
@@ -31,8 +31,8 @@ func (metrics *Metrics) SetGauge(id string, val *float64) {
 }
 
 func (metrics *Metrics) Get(id string) *Metric {
-	metrics.Lock()
-	defer metrics.Unlock()
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
 		return nil
 	}
@@ -41,8 +41,8 @@ func (metrics *Metrics) Get(id string) *Metric {
 }
 
 func (metrics *Metrics) UpdateCounter(id string, val int64) int64 {
-	metrics.Lock()
-	defer metrics.Unlock()
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
 		metrics.values = make(map[string]*Metric)
 		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &val}
@@ -57,8 +57,8 @@ func (metrics *Metrics) UpdateCounter(id string, val int64) int64 {
 }
 
 func (metrics *Metrics) List() map[string]*Metric {
-	metrics.Lock()
-	defer metrics.Unlock()
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
 		return map[string]*Metric{}
 	}
@@ -69,8 +69,8 @@ func (metrics *Metrics) List() map[string]*Metric {
 // for tests
 
 func (metrics *Metrics) ResetValues() {
-	metrics.Lock()
-	defer metrics.Unlock()
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values != nil {
 		metrics.values = nil
 	}
