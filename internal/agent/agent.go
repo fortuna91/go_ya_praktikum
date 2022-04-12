@@ -107,7 +107,7 @@ func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 func RunAgent() {
 	fmt.Println("Start sending metrics...")
 
-	config := configs.ReadAgentConfig()
+	config := configs.SetAgentConfig()
 
 	pollTicker := time.NewTicker(config.PolInterval)
 	reportTicker := time.NewTicker(config.ReportInterval)

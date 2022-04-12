@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	config := configs.ReadServerConfig()
+	config := configs.SetServerConfig()
 	handlers.StoreFile = config.StoreFile
 
 	r := run.NewRouter()
@@ -52,7 +52,7 @@ func main() {
 		handlers.StoreMetricImmediately = true
 	}
 
-	fmt.Println("Start server")
+	fmt.Println("Start server on", config.Address)
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
