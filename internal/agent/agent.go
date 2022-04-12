@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/caarlos0/env/v6"
-	"log"
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -89,7 +88,7 @@ func SendRequest(client *http.Client, request *http.Request) int {
 	return response.StatusCode
 }
 
-func SendMetrics(metricsList *[]*metrics.Metric, config Config) {
+func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 	client := http.Client{}
 	for _, m := range *metricsList {
 		body, err := json.Marshal(m)
@@ -108,11 +107,7 @@ func SendMetrics(metricsList *[]*metrics.Metric, config Config) {
 func RunAgent() {
 	fmt.Println("Start sending metrics...")
 
-	var config Config
-	err := env.Parse(&config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	config := configs.ReadAgentConfig()
 
 	pollTicker := time.NewTicker(config.PolInterval)
 	reportTicker := time.NewTicker(config.ReportInterval)

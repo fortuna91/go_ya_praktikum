@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/caarlos0/env/v6"
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -15,11 +16,8 @@ import (
 )
 
 func main() {
-	var config Config
-	err := env.Parse(&config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	config := configs.ReadServerConfig()
+	handlers.StoreFile = config.StoreFile
 
 	r := run.NewRouter()
 	server := &http.Server{Addr: config.Address, Handler: r}
@@ -31,18 +29,31 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
+		handlers.StoreMetrics(config.StoreFile)
+
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)
 		if err != nil {
-
 			log.Fatal(err)
 		}
 		serverStopCtx()
 		log.Println("Server was stopped correctly")
 	}()
 
+	if config.Restore {
+		handlers.Restore(config)
+	}
+
+	if config.StoreInterval > 0 {
+		handlers.StoreMetricImmediately = false
+		storeTicker := time.NewTicker(config.StoreInterval)
+		go handlers.StoreMetricsTicker(storeTicker, config)
+	} else {
+		handlers.StoreMetricImmediately = true
+	}
+
 	fmt.Println("Start server")
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
