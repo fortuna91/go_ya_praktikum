@@ -46,18 +46,23 @@ func SetServerConfig() ServerConfig {
 	if err != nil {
 		log.Fatal(err)
 	}
+	addr := flag.String("a", "127.0.0.1:8080", "Address")
+	interval := flag.Duration("i", 30*time.Second, "Address")
+	file := flag.String("f", "/tmp/devops-metrics-db.json", "Store file name")
+	restore := flag.Bool("r", true, "Address")
+	flag.Parse()
+
 	if _, ok := os.LookupEnv("ADDRESS"); !ok {
-		flag.StringVar(&config.Address, "a", "127.0.0.1:8080", "Address")
+		config.Address = *addr
 	}
 	if _, ok := os.LookupEnv("STORE_INTERVAL"); !ok {
-		flag.DurationVar(&config.StoreInterval, "i", 30*time.Second, "Address")
+		config.StoreInterval = *interval
 	}
 	if _, ok := os.LookupEnv("STORE_FILE"); !ok {
-		flag.StringVar(&config.StoreFile, "f", "/tmp/devops-metrics-db.json", "Store file name")
+		config.StoreFile = *file
 	}
 	if _, ok := os.LookupEnv("RESTORE"); !ok {
-		flag.BoolVar(&config.Restore, "r", true, "Address")
+		config.Restore = *restore
 	}
-	flag.Parse()
 	return config
 }
