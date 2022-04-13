@@ -161,7 +161,6 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric id", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	if metricRequest.MType == metrics.Gauge {
 		if metricRequest.Value == nil {
 			http.Error(w, "Empty metric value", http.StatusBadRequest)
@@ -221,7 +220,6 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error sending the response", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, errBody := w.Write(bodyResp)
 		if errBody != nil {
