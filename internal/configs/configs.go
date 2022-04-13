@@ -11,7 +11,7 @@ import (
 type AgentConfig struct {
 	Address        string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
-	PolInterval    time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
 }
 
 type ServerConfig struct {
@@ -34,7 +34,7 @@ func SetAgentConfig() AgentConfig {
 		flag.DurationVar(&config.ReportInterval, "r", 10*time.Second, "Report interval")
 	}
 	if _, ok := os.LookupEnv("POLL_INTERVAL"); !ok {
-		flag.DurationVar(&config.PolInterval, "p", 2*time.Second, "Poll interval")
+		flag.DurationVar(&config.PollInterval, "p", 2*time.Second, "Poll interval")
 	}
 	flag.Parse()
 	return config
@@ -47,9 +47,9 @@ func SetServerConfig() ServerConfig {
 		log.Fatal(err)
 	}
 	addr := flag.String("a", "127.0.0.1:8080", "Address")
-	interval := flag.Duration("i", 30*time.Second, "Address")
+	interval := flag.Duration("i", 30*time.Second, "Store interval")
 	file := flag.String("f", "/tmp/devops-metrics-db.json", "Store file name")
-	restore := flag.Bool("r", true, "Address")
+	restore := flag.Bool("r", true, "Restore")
 	flag.Parse()
 
 	if _, ok := os.LookupEnv("ADDRESS"); !ok {

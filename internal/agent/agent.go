@@ -109,7 +109,7 @@ func RunAgent() {
 
 	config := configs.SetAgentConfig()
 
-	pollTicker := time.NewTicker(config.PolInterval)
+	pollTicker := time.NewTicker(config.PollInterval)
 	reportTicker := time.NewTicker(config.ReportInterval)
 	ch := make(chan []*metrics.Metric)
 
