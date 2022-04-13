@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/internal/configs"
 	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -20,7 +22,7 @@ func main() {
 	handlers.StoreFile = config.StoreFile
 
 	r := run.NewRouter()
-	server := &http.Server{Addr: config.Address, Handler: r}
+	server := &http.Server{Addr: config.Address, Handler: middleware.GzipHandle(r)}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan,
@@ -29,7 +31,7 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
-		handlers.StoreMetrics(config.StoreFile)
+		metrics.StoreMetrics(config.StoreFile)
 
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)
@@ -41,13 +43,13 @@ func main() {
 	}()
 
 	if config.Restore {
-		handlers.Restore(config)
+		metrics.Restore(config)
 	}
 
 	if config.StoreInterval > 0 {
 		handlers.StoreMetricImmediately = false
 		storeTicker := time.NewTicker(config.StoreInterval)
-		go handlers.StoreMetricsTicker(storeTicker, config)
+		go metrics.StoreMetricsTicker(storeTicker, config)
 	} else {
 		handlers.StoreMetricImmediately = true
 	}

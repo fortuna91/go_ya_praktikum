@@ -1,20 +1,17 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/storage"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"github.com/go-chi/chi/v5"
 	"html/template"
+	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
-	"time"
-
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
-	"github.com/go-chi/chi/v5"
 )
 
 var Metrics = metrics.Metrics{}
@@ -22,47 +19,6 @@ var Metrics = metrics.Metrics{}
 // fixme: Do better
 var StoreMetricImmediately bool
 var StoreFile string
-
-func StoreMetricsTicker(storeTicker *time.Ticker, config configs.ServerConfig) {
-	if len(config.StoreFile) > 0 {
-		for {
-			<-storeTicker.C
-			StoreMetrics(config.StoreFile)
-		}
-	} else {
-		fmt.Println("Do not store metrics")
-	}
-}
-
-func StoreMetrics(storeFile string) {
-	producer, err := storage.NewWriter(storeFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer producer.Close()
-
-	fmt.Println("Store metrics...")
-	currMetrics := Metrics.List()
-	if err := producer.WriteMetrics(&currMetrics); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func Restore(config configs.ServerConfig) {
-	producer, err := storage.NewReader(config.StoreFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer producer.Close()
-
-	fmt.Println("Restore metrics...")
-	storedMetrics, err := producer.ReadMetrics()
-	if err != nil {
-		fmt.Println("Error while reading")
-		log.Fatal(err)
-	}
-	Metrics.RestoreMetrics(storedMetrics)
-}
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -168,8 +124,30 @@ func NotImplemented(w http.ResponseWriter, _ *http.Request) {
 
 // JSON
 
+func getReader(w http.ResponseWriter, r *http.Request) *io.ReadCloser {
+	var reader io.ReadCloser
+	var err error
+
+	if r.Header.Get(`Content-Encoding`) == `gzip` {
+		reader, err = gzip.NewReader(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return nil
+		}
+	} else {
+		reader = r.Body
+	}
+	return &reader
+}
+
 func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	reader := *getReader(w, r)
+	if reader == nil {
+		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
 	respBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("Couldn't read body %v\n", err)
@@ -202,7 +180,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if StoreMetricImmediately && len(StoreFile) > 0 {
-		StoreMetrics(StoreFile)
+		metrics.StoreMetrics(StoreFile)
 	}
 	// ??
 	metric := metrics.Metric{}
@@ -215,7 +193,13 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	reader := *getReader(w, r)
+	if reader == nil {
+		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
 	respBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("Couldn't read body %v\n", err)
