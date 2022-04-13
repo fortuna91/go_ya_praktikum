@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/internal/configs"
 	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
+	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 	"log"
 	"net/http"
 	"os"
@@ -31,7 +31,7 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
-		metrics.StoreMetrics(config.StoreFile)
+		storage.StoreMetrics(&handlers.Metrics, config.StoreFile)
 
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)
@@ -43,13 +43,13 @@ func main() {
 	}()
 
 	if config.Restore {
-		metrics.Restore(config)
+		storage.Restore(&handlers.Metrics, config)
 	}
 
 	if config.StoreInterval > 0 {
 		handlers.StoreMetricImmediately = false
 		storeTicker := time.NewTicker(config.StoreInterval)
-		go metrics.StoreMetricsTicker(storeTicker, config)
+		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
 	} else {
 		handlers.StoreMetricImmediately = true
 	}

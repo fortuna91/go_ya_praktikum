@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"io"
@@ -180,7 +181,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if StoreMetricImmediately && len(StoreFile) > 0 {
-		metrics.StoreMetrics(StoreFile)
+		storage.StoreMetrics(&Metrics, StoreFile)
 	}
 	// ??
 	metric := metrics.Metric{}

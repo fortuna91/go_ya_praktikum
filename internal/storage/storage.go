@@ -2,8 +2,12 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"log"
 	"os"
+	"time"
 )
 
 type writer struct {
@@ -59,4 +63,45 @@ func (p *reader) ReadMetrics() (*map[string]*metrics.Metric, error) {
 
 func (p *reader) Close() error {
 	return p.file.Close()
+}
+
+func StoreMetricsTicker(storeTicker *time.Ticker, handlerMetrics *metrics.Metrics, config configs.ServerConfig) {
+	if len(config.StoreFile) > 0 {
+		for {
+			<-storeTicker.C
+			StoreMetrics(handlerMetrics, config.StoreFile)
+		}
+	} else {
+		fmt.Println("Do not store metrics")
+	}
+}
+
+func StoreMetrics(handlerMetrics *metrics.Metrics, storeFile string) {
+	producer, err := NewWriter(storeFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer producer.Close()
+
+	fmt.Println("Store metrics...")
+	currMetrics := handlerMetrics.List()
+	if err := producer.WriteMetrics(&currMetrics); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func Restore(handlerMetrics *metrics.Metrics, config configs.ServerConfig) {
+	producer, err := NewReader(config.StoreFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer producer.Close()
+
+	fmt.Println("Restore metrics...")
+	storedMetrics, err := producer.ReadMetrics()
+	if err != nil {
+		fmt.Println("Error while reading")
+		log.Fatal(err)
+	}
+	handlerMetrics.RestoreMetrics(storedMetrics)
 }

@@ -2,12 +2,7 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
-	"github.com/fortuna91/go_ya_praktikum/internal/storage"
-	"log"
 	"sync"
-	"time"
 )
 
 const Gauge = "gauge"
@@ -77,47 +72,6 @@ func (metrics *Metrics) List() map[string]*Metric {
 }
 
 // store
-
-func StoreMetricsTicker(storeTicker *time.Ticker, config configs.ServerConfig) {
-	if len(config.StoreFile) > 0 {
-		for {
-			<-storeTicker.C
-			StoreMetrics(config.StoreFile)
-		}
-	} else {
-		fmt.Println("Do not store metrics")
-	}
-}
-
-func StoreMetrics(storeFile string) {
-	producer, err := storage.NewWriter(storeFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer producer.Close()
-
-	fmt.Println("Store metrics...")
-	currMetrics := handlers.Metrics.List()
-	if err := producer.WriteMetrics(&currMetrics); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func Restore(config configs.ServerConfig) {
-	producer, err := storage.NewReader(config.StoreFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer producer.Close()
-
-	fmt.Println("Restore metrics...")
-	storedMetrics, err := producer.ReadMetrics()
-	if err != nil {
-		fmt.Println("Error while reading")
-		log.Fatal(err)
-	}
-	handlers.Metrics.RestoreMetrics(storedMetrics)
-}
 
 // for tests
 
