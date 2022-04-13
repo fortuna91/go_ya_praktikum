@@ -4,8 +4,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
-	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"io"
@@ -13,6 +11,9 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 )
 
 var Metrics = metrics.Metrics{}

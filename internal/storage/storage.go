@@ -3,11 +3,12 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"log"
 	"os"
 	"time"
+
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
 type writer struct {

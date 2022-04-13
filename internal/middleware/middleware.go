@@ -1,11 +1,10 @@
 package middleware
 
 import (
-	"io"
-	"strings"
-
 	"compress/gzip"
+	"io"
 	"net/http"
+	"strings"
 )
 
 type gzipWriter struct {

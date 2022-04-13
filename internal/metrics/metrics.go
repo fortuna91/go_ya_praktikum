@@ -71,8 +71,6 @@ func (metrics *Metrics) List() map[string]*Metric {
 	return metrics.values
 }
 
-// store
-
 // for tests
 
 func (metrics *Metrics) ResetValues() {

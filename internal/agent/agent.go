@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/configs"
 	"math/rand"
 	"net/http"
 	"runtime"
 	"time"
 
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
