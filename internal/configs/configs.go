@@ -27,18 +27,14 @@ func SetAgentConfig() AgentConfig {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	addr := flag.String("a", "127.0.0.1:8080", "Address")
-	reportInterval := flag.Duration("r", 10*time.Second, "Report interval")
-	pollInterval := flag.Duration("p", 2*time.Second, "Poll interval")
 	if _, ok := os.LookupEnv("ADDRESS"); !ok {
-		config.Address = *addr
+		flag.StringVar(&config.Address, "a", "127.0.0.1:8080", "Address")
 	}
 	if _, ok := os.LookupEnv("REPORT_INTERVAL"); !ok {
-		config.ReportInterval = *reportInterval
+		flag.DurationVar(&config.ReportInterval, "r", 10*time.Second, "Report interval")
 	}
 	if _, ok := os.LookupEnv("POLL_INTERVAL"); !ok {
-		config.PolInterval = *pollInterval
+		flag.DurationVar(&config.PolInterval, "p", 2*time.Second, "Poll interval")
 	}
 	flag.Parse()
 	return config
