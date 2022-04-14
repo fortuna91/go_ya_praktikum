@@ -1,17 +1,26 @@
 package handlers
 
 import (
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"html/template"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"sort"
 	"strconv"
 
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
-	"github.com/go-chi/chi/v5"
+	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 )
 
 var Metrics = metrics.Metrics{}
+
+// fixme: Do better
+var StoreMetricImmediately = true
+var StoreFile string
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -19,37 +28,24 @@ var Metrics = metrics.Metrics{}
 func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got it...")
 	val := chi.URLParam(r, "value")
-	/*if !contains(gaugeMetrics, items[3]) {
-		http.Error(w, "Unknown metric", http.StatusBadRequest)
-		return
-	}*/
-	/*if len(items) < 5 {
-		fmt.Printf("Not enough value. Path: %v\n", path)
-		http.Error(w, "Not enough value", http.StatusNotFound)
-		return
-	}*/
 	if val == "" {
 		http.Error(w, "Empty value", http.StatusNotFound)
 		return
 	}
-	_, err := strconv.ParseFloat(val, 64)
+	floatVal, err := strconv.ParseFloat(val, 64)
 	if err != nil {
 		fmt.Printf("Parse error: %v\n", err)
 		http.Error(w, "Wrong metric value", http.StatusBadRequest)
 		return
 	}
-	metricType := chi.URLParam(r, "metricName")
-	Metrics.Set(metricType, val)
+	metricName := chi.URLParam(r, "metricName")
+	Metrics.SetGauge(metricName, &floatVal)
 	w.WriteHeader(http.StatusOK)
 }
 
 func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 	// go Counter(CountChannel)
 	val := chi.URLParam(r, "value")
-	/*if items[3] != counterMetric {
-		http.Error(w, "Unknown metric", http.StatusBadRequest)
-		return
-	}*/
 	if val == "" {
 		http.Error(w, "Empty value", http.StatusNotFound)
 		return
@@ -60,15 +56,22 @@ func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Wrong metric value", http.StatusBadRequest)
 		return
 	}
-	metricType := chi.URLParam(r, "metricName")
-	Metrics.UpdateCounter(metricType, countVal)
+	metricName := chi.URLParam(r, "metricName")
+	Metrics.UpdateCounter(metricName, countVal)
 	w.WriteHeader(http.StatusOK)
 }
 
 func GetMetric(w http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "metricName")
-	val := Metrics.Get(metricType)
-	if len(val) > 0 { // fixme "empty" check
+	metricName := chi.URLParam(r, "metricName")
+	metric := Metrics.Get(metricName)
+	if metric != nil {
+		var val = ""
+		if metric.MType == metrics.Gauge {
+			val = strconv.FormatFloat(*metric.Value, 'f', 3, 64)
+		} else if metric.MType == metrics.Counter {
+			val = strconv.FormatInt(*metric.Delta, 10)
+		}
+		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(val))
 		if err != nil {
@@ -89,7 +92,9 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	<td>Value</td>
 	</tr>{{range . }}
 	<tr>
-	<td>{{ .Name }}</td>
+	<td>{{ .ID }}</td>
+	<td>{{ .MType }}</td>
+	<td>{{ .Delta }}</td>
 	<td>{{ .Value }}</td>
 	</tr>{{end}}
 	</table>
@@ -103,9 +108,10 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	sort.Strings(metricKeys)
 	listMetrics := make([]metrics.Metric, 0, len(dictMetrics))
 	for _, k := range metricKeys {
-		listMetrics = append(listMetrics, dictMetrics[k])
+		listMetrics = append(listMetrics, *dictMetrics[k])
 	}
 
+	w.Header().Set("Content-Type", "text/html")
 	tmpl, err := template.New("index").Parse(tmplHTML)
 	if err != nil {
 		http.Error(w, "Error getting the template", http.StatusInternalServerError)
@@ -118,4 +124,115 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 
 func NotImplemented(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// JSON
+
+func getReader(w http.ResponseWriter, r *http.Request) *io.ReadCloser {
+	var reader io.ReadCloser
+	var err error
+
+	if r.Header.Get(`Content-Encoding`) == `gzip` {
+		reader, err = gzip.NewReader(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return nil
+		}
+	} else {
+		reader = r.Body
+	}
+	return &reader
+}
+
+func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
+	reader := *getReader(w, r)
+	if reader == nil {
+		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
+	respBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("Couldn't read body %v\n", err)
+		http.Error(w, "Couldn't read body", http.StatusInternalServerError)
+		return
+	}
+	metricRequest := metrics.Metric{}
+	json.Unmarshal(respBody, &metricRequest)
+	if len(metricRequest.ID) == 0 {
+		http.Error(w, "Empty metric id", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if metricRequest.MType == metrics.Gauge {
+		if metricRequest.Value == nil {
+			http.Error(w, "Empty metric value", http.StatusBadRequest)
+			return
+		}
+		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
+		w.WriteHeader(http.StatusOK)
+	} else if metricRequest.MType == metrics.Counter {
+		if metricRequest.Delta == nil {
+			http.Error(w, "Empty metric delta", http.StatusBadRequest)
+			return
+		}
+		Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Error(w, "Unknown metric type", http.StatusBadRequest)
+		return
+	}
+	if StoreMetricImmediately && len(StoreFile) > 0 {
+		storage.StoreMetrics(&Metrics, StoreFile)
+	}
+	// ??
+	metric := metrics.Metric{}
+	bodyResp, _ := json.Marshal(metric)
+	_, errBody := w.Write(bodyResp)
+	if errBody != nil {
+		fmt.Printf("Error sending the response: %v\n", errBody)
+		http.Error(w, "Error sending the response", http.StatusInternalServerError)
+	}
+}
+
+func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
+	reader := *getReader(w, r)
+	if reader == nil {
+		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
+	respBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("Couldn't read body %v\n", err)
+		http.Error(w, "Couldn't read body", http.StatusInternalServerError)
+		return
+	}
+	metricRequest := metrics.Metric{}
+	json.Unmarshal(respBody, &metricRequest)
+	if len(metricRequest.ID) == 0 {
+		http.Error(w, "Empty metric ID", http.StatusBadRequest)
+		return
+	}
+	metric := Metrics.Get(metricRequest.ID)
+	if metric != nil {
+		bodyResp, err := json.Marshal(metric)
+		if err != nil {
+			fmt.Printf("Cannot convert Metric to JSON: %v", err)
+			http.Error(w, "Error sending the response", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, errBody := w.Write(bodyResp)
+		if errBody != nil {
+			fmt.Printf("Error sending the response: %v\n", errBody)
+			http.Error(w, "Error sending the response", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
 }

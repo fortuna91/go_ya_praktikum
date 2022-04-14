@@ -2,70 +2,80 @@ package metrics
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 )
 
+const Gauge = "gauge"
+const Counter = "counter"
+
 type Metric struct {
-	Name  string
-	Type  string
-	Value string
+	ID    string   `json:"id"`
+	MType string   `json:"type"`
+	Delta *int64   `json:"delta,omitempty"`
+	Value *float64 `json:"value,omitempty"`
 }
 
 type Metrics struct {
-	values map[string]Metric
-	sync.RWMutex
+	values map[string]*Metric
+	mtx    sync.RWMutex
 }
 
-func (metrics *Metrics) Set(k string, v string) {
-	metrics.Lock()
-	defer metrics.Unlock()
+func (metrics *Metrics) RestoreMetrics(values map[string]*Metric) {
+	metrics.values = values
+	fmt.Printf("Metrics were restored: %v\n", values)
+}
+
+func (metrics *Metrics) SetGauge(id string, val *float64) {
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
-		metrics.values = make(map[string]Metric)
+		metrics.values = make(map[string]*Metric)
 	}
-	metrics.values[k] = Metric{Name: k, Value: v}
+	metrics.values[id] = &Metric{ID: id, MType: Gauge, Value: val}
+	fmt.Printf("Set %v = %v\n", id, metrics.values[id])
 }
 
-func (metrics *Metrics) Get(k string) string {
-	metrics.Lock()
-	defer metrics.Unlock()
+func (metrics *Metrics) Get(id string) *Metric {
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
-		return ""
+		return nil
 	}
-	return metrics.values[k].Value
+	fmt.Printf("Get %v = %v\n", id, metrics.values[id])
+	return metrics.values[id]
 }
 
-func (metrics *Metrics) UpdateCounter(k string, v int64) string {
-	metrics.Lock()
-	defer metrics.Unlock()
+func (metrics *Metrics) UpdateCounter(id string, val int64) int64 {
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
-		metrics.values = make(map[string]Metric)
-		metrics.values[k] = Metric{Name: k, Value: strconv.FormatInt(v, 10)}
-	} else if metrics.values[k] == (Metric{}) { // fixme "empty" check
-		metrics.values[k] = Metric{Name: k, Value: strconv.FormatInt(v, 10)}
+		metrics.values = make(map[string]*Metric)
+		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &val}
+	} else if metrics.values[id] == nil {
+		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &val}
 	} else {
-		currVal, err := strconv.ParseInt(metrics.values[k].Value, 10, 64)
-		if err != nil {
-			panic(fmt.Sprintf("Wrong current value of conter metric: %v=%v", k, metrics.values[k]))
-		}
-		newVal := currVal + v
-		metrics.values[k] = Metric{Name: k, Value: strconv.FormatInt(newVal, 10)}
+		currVal := *metrics.values[id].Delta
+		newVal := currVal + val
+		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &newVal}
 	}
-	return metrics.values[k].Value
+	return *metrics.values[id].Delta
 }
 
-func (metrics *Metrics) List() map[string]Metric {
-	metrics.Lock()
-	defer metrics.Unlock()
+func (metrics *Metrics) List() map[string]*Metric {
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
-		return map[string]Metric{}
+		return map[string]*Metric{}
 	}
+	fmt.Println(metrics.values)
 	return metrics.values
 }
 
+// for tests
+
 func (metrics *Metrics) ResetValues() {
-	metrics.Lock()
-	defer metrics.Unlock()
+	metrics.mtx.Lock()
+	defer metrics.mtx.Unlock()
 	if metrics.values != nil {
 		metrics.values = nil
 	}

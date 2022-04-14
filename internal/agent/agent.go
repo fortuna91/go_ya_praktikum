@@ -1,74 +1,86 @@
 package agent
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"runtime"
-	"strconv"
 	"time"
+
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
-type Metric struct {
-	value      string
-	metricName string
-	metricType string
+func getFloat64Pointer(val uint64) *float64 {
+	fVal := float64(val)
+	return &fVal
 }
 
-func GetMetrics(count int64) []Metric {
-	var metrics []Metric
+func GetMetrics(count int64) []*metrics.Metric {
+	var metricsList []*metrics.Metric
 	mem := runtime.MemStats{}
 	runtime.ReadMemStats(&mem)
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.Alloc, 10), "Alloc", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.BuckHashSys, 10), "BuckHashSys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.Frees, 10), "Frees", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatFloat(mem.GCCPUFraction, 'f', 2, 64), "GCCPUFraction", "gauge"}) // fixme
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.GCSys, 10), "GCSys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.HeapAlloc, 10), "HeapAlloc", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.HeapIdle, 10), "HeapIdle", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.HeapInuse, 10), "HeapInuse", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.HeapObjects, 10), "HeapObjects", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.HeapReleased, 10), "HeapReleased", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.HeapSys, 10), "HeapSys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.LastGC, 10), "LastGC", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.Lookups, 10), "Lookups", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.MCacheInuse, 10), "MCacheInuse", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.MCacheSys, 10), "MCacheSys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.MSpanInuse, 10), "MSpanInuse", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.MSpanSys, 10), "MSpanSys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.Mallocs, 10), "Mallocs", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.NextGC, 10), "NextGC", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(uint64(mem.NumForcedGC), 10), "NumForcedGC", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(uint64(mem.NumGC), 10), "NumGC", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.OtherSys, 10), "OtherSys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.PauseTotalNs, 10), "PauseTotalNs", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.StackInuse, 10), "StackInuse", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.StackSys, 10), "StackSys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.Sys, 10), "Sys", "gauge"})
-	metrics = append(metrics, Metric{strconv.FormatUint(mem.TotalAlloc, 10), "TotalAlloc", "gauge"})
+	metricsList = append(metricsList, &metrics.Metric{ID: "Alloc", MType: metrics.Gauge, Value: getFloat64Pointer(mem.Alloc)})
+	metricsList = append(metricsList, &metrics.Metric{ID: "BuckHashSys", MType: metrics.Gauge, Value: getFloat64Pointer(mem.BuckHashSys)})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.Frees), ID: "Frees", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: &mem.GCCPUFraction, ID: "GCCPUFraction", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.GCSys), ID: "GCSys", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.HeapAlloc), ID: "HeapAlloc", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.HeapIdle), ID: "HeapIdle", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.HeapInuse), ID: "HeapInuse", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.HeapObjects), ID: "HeapObjects", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.HeapReleased), ID: "HeapReleased", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.HeapSys), ID: "HeapSys", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.LastGC), ID: "LastGC", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.Lookups), ID: "Lookups", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.MCacheInuse), ID: "MCacheInuse", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.MCacheSys), ID: "MCacheSys", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.MSpanInuse), ID: "MSpanInuse", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.MSpanSys), ID: "MSpanSys", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.Mallocs), ID: "Mallocs", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.NextGC), ID: "NextGC", MType: metrics.Gauge})
+	numForced := float64(mem.NumForcedGC)
+	metricsList = append(metricsList, &metrics.Metric{Value: &numForced, ID: "NumForcedGC", MType: metrics.Gauge})
+	numGC := float64(mem.NumGC)
+	metricsList = append(metricsList, &metrics.Metric{Value: &numGC, ID: "NumGC", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.OtherSys), ID: "OtherSys", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.PauseTotalNs), ID: "PauseTotalNs", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.StackInuse), ID: "StackInuse", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.StackSys), ID: "StackSys", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.Sys), ID: "Sys", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.TotalAlloc), ID: "TotalAlloc", MType: metrics.Gauge})
 
-	metrics = append(metrics, Metric{strconv.FormatInt(count, 10), "PollCount", "counter"}) // TODO
-	metrics = append(metrics, Metric{strconv.FormatFloat(rand.Float64(), 'f', 2, 64), "RandomValue", "gauge"})
-	return metrics
+	metricsList = append(metricsList, &metrics.Metric{Delta: &count, ID: "PollCount", MType: metrics.Counter}) // TODO
+	val25 := rand.Float64()
+	metricsList = append(metricsList, &metrics.Metric{Value: &val25, ID: "RandomValue", MType: metrics.Gauge})
+	return metricsList
 }
 
 func SendRequest(client *http.Client, request *http.Request) int {
-	request.Header.Set("Content-Type", "text/plain")
+	request.Header.Set("Content-Type", "application/json")
 	response, err := client.Do(request)
 	if err != nil {
 		fmt.Println(err)
+		return -1
 	}
 	defer response.Body.Close()
 	return response.StatusCode
 }
 
-func SendMetrics(metrics *[]Metric) {
+func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 	client := http.Client{}
-	for _, m := range *metrics {
-		request, _ := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/update/"+m.metricType+"/"+m.metricName+"/"+m.value, nil)
+	for _, m := range *metricsList {
+		body, err := json.Marshal(m)
+		if err != nil {
+			fmt.Printf("Cannot convert Metric to JSON: %v", err)
+			continue
+		}
+		request, _ := http.NewRequest(http.MethodPost, "http://"+config.Address+"/update", bytes.NewReader(body))
 		responseCode := SendRequest(&client, request)
 		if responseCode != 200 {
-			fmt.Printf("Error in request %v/%v: response code: %d", m.metricType, m.metricName, responseCode)
+			fmt.Printf("Error in request for %v: response code: %d", m.ID, responseCode)
 		}
 	}
 }
@@ -76,15 +88,34 @@ func SendMetrics(metrics *[]Metric) {
 func RunAgent() {
 	fmt.Println("Start sending metrics...")
 
-	ticker := time.NewTicker(2 * time.Second)
-	var i int64 = 0
+	config := configs.SetAgentConfig()
+
+	pollTicker := time.NewTicker(config.PollInterval)
+	reportTicker := time.NewTicker(config.ReportInterval)
+	ch := make(chan []*metrics.Metric)
+
+	go func() {
+		for {
+			<-ch
+		}
+	}()
+
+	go func() {
+		for {
+			<-reportTicker.C
+			metrics := <-ch
+			fmt.Println("Send metrics...")
+			SendMetrics(&metrics, config)
+		}
+	}()
+
 	for {
-		<-ticker.C
-		i++
-		metrics := GetMetrics(i)
-		if i%5 == 0 {
-			SendMetrics(&metrics)
-			// set i = 0 ??
+		var i int64 = 0
+		for {
+			<-pollTicker.C
+			i++
+			metrics := GetMetrics(i)
+			ch <- metrics
 		}
 	}
 }
