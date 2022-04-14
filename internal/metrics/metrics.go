@@ -20,9 +20,9 @@ type Metrics struct {
 	mtx    sync.RWMutex
 }
 
-func (metrics *Metrics) RestoreMetrics(values *map[string]*Metric) {
-	metrics.values = *values
-	fmt.Printf("Metrics were restored: %v\n", *values)
+func (metrics *Metrics) RestoreMetrics(values map[string]*Metric) {
+	metrics.values = values
+	fmt.Printf("Metrics were restored: %v\n", values)
 }
 
 func (metrics *Metrics) SetGauge(id string, val *float64) {

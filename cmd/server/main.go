@@ -46,12 +46,11 @@ func main() {
 		storage.Restore(&handlers.Metrics, config)
 	}
 
+	// true by default
 	if config.StoreInterval > 0 {
 		handlers.StoreMetricImmediately = false
 		storeTicker := time.NewTicker(config.StoreInterval)
 		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
-	} else {
-		handlers.StoreMetricImmediately = true
 	}
 
 	fmt.Println("Start server on", config.Address)

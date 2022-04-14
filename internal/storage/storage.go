@@ -32,7 +32,7 @@ func NewWriter(fileName string) (*writer, error) {
 	}, nil
 }
 
-func (p *writer) WriteMetrics(metric *map[string]*metrics.Metric) error {
+func (p *writer) WriteMetrics(metric map[string]*metrics.Metric) error {
 	return p.encoder.Encode(&metric)
 }
 
@@ -51,15 +51,15 @@ func NewReader(fileName string) (*reader, error) {
 	}, nil
 }
 
-func (p *reader) ReadMetrics() (*map[string]*metrics.Metric, error) {
+func (p *reader) ReadMetrics() (map[string]*metrics.Metric, error) {
 	storedMetric := make(map[string]*metrics.Metric)
 	if err := p.decoder.Decode(&storedMetric); err != nil {
 		if string(err.Error()) == "EOF" {
-			return &storedMetric, nil
+			return storedMetric, nil
 		}
 		return nil, err
 	}
-	return &storedMetric, nil
+	return storedMetric, nil
 }
 
 func (p *reader) Close() error {
@@ -86,7 +86,7 @@ func StoreMetrics(handlerMetrics *metrics.Metrics, storeFile string) {
 
 	fmt.Println("Store metrics...")
 	currMetrics := handlerMetrics.List()
-	if err := producer.WriteMetrics(&currMetrics); err != nil {
+	if err := producer.WriteMetrics(currMetrics); err != nil {
 		log.Fatal(err)
 	}
 }

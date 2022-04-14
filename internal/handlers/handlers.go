@@ -19,7 +19,7 @@ import (
 var Metrics = metrics.Metrics{}
 
 // fixme: Do better
-var StoreMetricImmediately bool
+var StoreMetricImmediately = true
 var StoreFile string
 
 // fixme maybe for feature it has to be channel with mutex
