@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"fmt"
 	"sync"
 )
@@ -13,6 +15,7 @@ type Metric struct {
 	MType string   `json:"type"`
 	Delta *int64   `json:"delta,omitempty"`
 	Value *float64 `json:"value,omitempty"`
+	Hash  string   `json:"hash,omitempty"`
 }
 
 type Metrics struct {
@@ -69,6 +72,22 @@ func (metrics *Metrics) List() map[string]*Metric {
 	}
 	fmt.Println(metrics.values)
 	return metrics.values
+}
+
+func CalcHash(metric *Metric, key string) (hash string) {
+	hashedString := ""
+	if metric.MType == Gauge {
+		hashedString = fmt.Sprintf("%s:%s:%d", metric.ID, Gauge, metric.Value)
+	} else if metric.MType == Counter {
+		hashedString = fmt.Sprintf("%s:%s:%d", metric.ID, Counter, metric.Delta)
+	}
+	h := hmac.New(sha256.New, []byte(key))
+	h.Write([]byte(hashedString))
+	return string(h.Sum(nil))
+}
+
+func (metric *Metric) SetHash(key string) {
+	CalcHash(metric, key)
 }
 
 // for tests

@@ -53,6 +53,8 @@ func main() {
 		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
 	}
 
+	handlers.HashKey = config.Key
+
 	fmt.Println("Start server on", config.Address)
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

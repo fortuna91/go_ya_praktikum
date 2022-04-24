@@ -71,6 +71,11 @@ func SendRequest(client *http.Client, request *http.Request) int {
 
 func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 	client := http.Client{}
+	if len(config.Key) > 0 {
+		for _, m := range *metricsList {
+			m.SetHash(config.Key)
+		}
+	}
 	for _, m := range *metricsList {
 		body, err := json.Marshal(m)
 		if err != nil {

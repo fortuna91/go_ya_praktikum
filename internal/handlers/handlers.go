@@ -21,6 +21,7 @@ var Metrics = metrics.Metrics{}
 // fixme: Do better
 var StoreMetricImmediately = true
 var StoreFile string
+var HashKey string
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -183,6 +184,15 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unknown metric type", http.StatusBadRequest)
 		return
 	}
+
+	if len(HashKey) > 0 {
+		metricHash := metrics.CalcHash(&metricRequest, HashKey)
+		if metricHash != metricRequest.Hash {
+			http.Error(w, "Incorrect data hash", http.StatusBadRequest)
+			return
+		}
+	}
+
 	if StoreMetricImmediately && len(StoreFile) > 0 {
 		storage.StoreMetrics(&Metrics, StoreFile)
 	}
@@ -218,6 +228,9 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	metric := Metrics.Get(metricRequest.ID)
 	if metric != nil {
+		if len(HashKey) > 0 {
+			metric.SetHash(HashKey)
+		}
 		bodyResp, err := json.Marshal(metric)
 		if err != nil {
 			fmt.Printf("Cannot convert Metric to JSON: %v", err)
