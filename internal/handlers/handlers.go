@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -169,7 +169,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 
 	if len(HashKey) > 0 {
 		metricHash := metrics.CalcHash(&metricRequest, HashKey)
-		if !bytes.Equal(metricHash, metricRequest.Hash) {
+		if !hmac.Equal(metricHash, metricRequest.Hash) {
 			fmt.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
 			fmt.Println(metricRequest.ID, metricRequest.MType)
 			if metricRequest.Value != nil {
