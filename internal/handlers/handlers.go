@@ -23,7 +23,7 @@ var Metrics = metrics.Metrics{}
 var StoreMetricImmediately = true
 var StoreFile string
 var HashKey string
-var DbAddress string
+var DBAddress string
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -255,7 +255,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func PingDB(w http.ResponseWriter, r *http.Request) {
-	dbConn := db.Connect(DbAddress)
+	dbConn := db.Connect(DBAddress)
 	res := db.Ping(dbConn)
 	if res {
 		w.WriteHeader(http.StatusOK)
