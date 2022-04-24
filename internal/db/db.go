@@ -3,11 +3,10 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"os"
 	"time"
 
-	_ "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4"
 )
 
 func Ping(dbConn *pgx.Conn) bool {
