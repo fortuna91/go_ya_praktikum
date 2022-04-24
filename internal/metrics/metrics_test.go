@@ -1,25 +1,31 @@
 package metrics
 
 import (
+	"encoding/hex"
 	"reflect"
 	"testing"
 )
 
 func TestCalcHash(t *testing.T) {
-	type args struct {
-		metric *Metric
-		key    string
-	}
 	tests := []struct {
 		name     string
-		args     args
-		wantHash []byte
+		metric   Metric
+		delta    int64
+		key      string
+		wantHash string
 	}{
-		// TODO: Add test cases.
+		{
+			name:     "Common",
+			metric:   Metric{ID: "GetSetZip245", MType: Counter},
+			delta:    int64(984847306),
+			key:      "key",
+			wantHash: "63cef738a3d8967b03333150bda021bf2ba250f535bdcd323a931db0a4a47874",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotHash := CalcHash(tt.args.metric, tt.args.key); !reflect.DeepEqual(gotHash, tt.wantHash) {
+			tt.metric.Delta = &tt.delta
+			if gotHash := CalcHash(&tt.metric, tt.key); !reflect.DeepEqual(hex.EncodeToString(gotHash), tt.wantHash) {
 				t.Errorf("CalcHash() = %v, want %v", gotHash, tt.wantHash)
 			}
 		})

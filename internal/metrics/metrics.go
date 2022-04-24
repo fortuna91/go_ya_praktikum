@@ -3,6 +3,7 @@ package metrics
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"sync"
 )
@@ -15,7 +16,7 @@ type Metric struct {
 	MType string   `json:"type"`
 	Delta *int64   `json:"delta,omitempty"`
 	Value *float64 `json:"value,omitempty"`
-	Hash  []byte   `json:"hash,omitempty"`
+	Hash  string   `json:"hash,omitempty"`
 }
 
 type Metrics struct {
@@ -74,7 +75,7 @@ func (metrics *Metrics) List() map[string]*Metric {
 	return metrics.values
 }
 
-func CalcHash(metric *Metric, key string) (hash []byte) {
+func CalcHash(metric *Metric, key string) (hash string) {
 	hashedString := ""
 	if metric.MType == Gauge {
 		hashedString = fmt.Sprintf("%s:%s:%f", metric.ID, Gauge, *metric.Value)
@@ -83,7 +84,7 @@ func CalcHash(metric *Metric, key string) (hash []byte) {
 	}
 	h := hmac.New(sha256.New, []byte(key))
 	h.Write([]byte(hashedString))
-	return h.Sum(nil)[:]
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func (metric *Metric) SetHash(key string) {
