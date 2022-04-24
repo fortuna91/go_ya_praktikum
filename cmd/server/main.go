@@ -54,7 +54,7 @@ func main() {
 	}
 
 	handlers.HashKey = config.Key
-	handlers.DbAddress = config.DB
+	handlers.DBAddress = config.DB
 
 	fmt.Println("Start server on", config.Address)
 	err := server.ListenAndServe()
