@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -168,7 +169,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 
 	if len(HashKey) > 0 {
 		metricHash := metrics.CalcHash(&metricRequest, HashKey)
-		if metricHash != metricRequest.Hash {
+		if bytes.Compare(metricHash, metricRequest.Hash) != 0 {
 			fmt.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
 			http.Error(w, "Incorrect data hash", http.StatusBadRequest)
 			return
