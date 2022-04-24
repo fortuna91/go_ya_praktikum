@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
-	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
-	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
+	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
 	"github.com/fortuna91/go_ya_praktikum/internal/server"
+	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 )
 
 func main() {

@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"io"
@@ -13,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 )
@@ -255,6 +255,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func PingDB(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("PING")
 	dbConn := db.Connect(DBAddress)
 	res := db.Ping(dbConn)
 	if res {
