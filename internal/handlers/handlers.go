@@ -171,6 +171,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		metricHash := metrics.CalcHash(&metricRequest, HashKey)
 		if bytes.Compare(metricHash, metricRequest.Hash) != 0 {
 			fmt.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
+			fmt.Println(metricRequest.ID, metricRequest.MType, *metricRequest.Value, *metricRequest.Delta)
 			http.Error(w, "Incorrect data hash", http.StatusBadRequest)
 			return
 		}
