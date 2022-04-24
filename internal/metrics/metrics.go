@@ -83,11 +83,11 @@ func CalcHash(metric *Metric, key string) (hash string) {
 	}
 	h := hmac.New(sha256.New, []byte(key))
 	h.Write([]byte(hashedString))
-	return string(h.Sum(nil))
+	return string(h.Sum(nil)[:])
 }
 
 func (metric *Metric) SetHash(key string) {
-	CalcHash(metric, key)
+	metric.Hash = CalcHash(metric, key)
 }
 
 // for tests

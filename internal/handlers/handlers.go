@@ -165,6 +165,16 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric id", http.StatusBadRequest)
 		return
 	}
+
+	if len(HashKey) > 0 {
+		metricHash := metrics.CalcHash(&metricRequest, HashKey)
+		if metricHash != metricRequest.Hash {
+			fmt.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
+			http.Error(w, "Incorrect data hash", http.StatusBadRequest)
+			return
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if metricRequest.MType == metrics.Gauge {
 		if metricRequest.Value == nil {
@@ -183,14 +193,6 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "Unknown metric type", http.StatusBadRequest)
 		return
-	}
-
-	if len(HashKey) > 0 {
-		metricHash := metrics.CalcHash(&metricRequest, HashKey)
-		if metricHash != metricRequest.Hash {
-			http.Error(w, "Incorrect data hash", http.StatusBadRequest)
-			return
-		}
 	}
 
 	if StoreMetricImmediately && len(StoreFile) > 0 {
