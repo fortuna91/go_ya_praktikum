@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"io"
@@ -22,6 +23,7 @@ var Metrics = metrics.Metrics{}
 var StoreMetricImmediately = true
 var StoreFile string
 var HashKey string
+var DbAddress string
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -249,5 +251,15 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func PingDB(w http.ResponseWriter, r *http.Request) {
+	dbConn := db.Connect(DbAddress)
+	res := db.Ping(dbConn)
+	if res {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Error(w, "DB is unavailable", http.StatusInternalServerError)
 	}
 }

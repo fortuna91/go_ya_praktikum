@@ -21,6 +21,7 @@ type ServerConfig struct {
 	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore       bool          `env:"RESTORE" envDefault:"true"`
 	Key           string        `env:"KEY"`
+	DB            string        `env:"DATABASE_DSN"`
 }
 
 func SetAgentConfig() AgentConfig {
@@ -55,7 +56,8 @@ func SetServerConfig() ServerConfig {
 	interval := flag.Duration("i", 30*time.Second, "Store interval")
 	file := flag.String("f", "/tmp/devops-metrics-db.json", "Store file name")
 	restore := flag.Bool("r", true, "Restore")
-	key := flag.String("k", "", "Key for ha	shing")
+	key := flag.String("k", "", "Key for hashing")
+	db := flag.String("d", "", "Database connection address")
 	flag.Parse()
 
 	if _, ok := os.LookupEnv("ADDRESS"); !ok {
@@ -72,6 +74,9 @@ func SetServerConfig() ServerConfig {
 	}
 	if _, ok := os.LookupEnv("KEY"); !ok {
 		config.Key = *key
+	}
+	if _, ok := os.LookupEnv("DATABASE_DSN"); !ok {
+		config.DB = *db
 	}
 	return config
 }

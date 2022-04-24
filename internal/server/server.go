@@ -1,4 +1,4 @@
-package run
+package server
 
 import (
 	"net/http"
@@ -34,5 +34,6 @@ func NewRouter() chi.Router {
 		r.Post("/", handlers.GetMetricJSON)
 	})
 	r.Get("/", handlers.ListMetrics)
+	r.Get("/ping", handlers.PingDB)
 	return r
 }

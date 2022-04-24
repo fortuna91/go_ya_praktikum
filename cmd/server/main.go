@@ -14,14 +14,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fortuna91/go_ya_praktikum/internal/run"
+	"github.com/fortuna91/go_ya_praktikum/internal/server"
 )
 
 func main() {
 	config := configs.SetServerConfig()
 	handlers.StoreFile = config.StoreFile
 
-	r := run.NewRouter()
+	r := server.NewRouter()
 	server := &http.Server{Addr: config.Address, Handler: middleware.GzipHandle(r)}
 
 	sigChan := make(chan os.Signal, 1)
@@ -54,6 +54,7 @@ func main() {
 	}
 
 	handlers.HashKey = config.Key
+	handlers.DbAddress = config.DB
 
 	fmt.Println("Start server on", config.Address)
 	err := server.ListenAndServe()
