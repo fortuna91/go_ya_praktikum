@@ -91,14 +91,14 @@ func (metric *Metric) SetHash(key string) {
 	metric.Hash = CalcHash(metric, key)
 }
 
-func (metric Metric) String() string {
+/*func (metric Metric) String() string {
 	if metric.MType == Gauge {
 		return fmt.Sprintf("id=%s, value=%v", metric.ID, *metric.Value)
 	} else if metric.MType == Counter {
 		return fmt.Sprintf("id=%s, delta=%v", metric.ID, *metric.Delta)
 	}
 	return ""
-}
+}*/
 
 // for tests
 
