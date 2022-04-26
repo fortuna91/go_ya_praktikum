@@ -56,7 +56,6 @@ func CreateDB(dbAddress string) {
 	if dbConn == nil {
 		return
 	}
-	return
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -65,6 +64,7 @@ func CreateDB(dbAddress string) {
 		panic(err)
 	}*/
 	query := fmt.Sprintf("CREATE DATABASE %s", dbName)
+	return
 	_, err := dbConn.ExecContext(ctx, query)
 	if err != nil {
 		fmt.Printf("Database %s exists: %s\n", dbName, err)
