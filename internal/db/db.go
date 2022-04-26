@@ -32,9 +32,7 @@ func Ping(dbAddress string) bool {
 func connect(dbAddress string) *sql.DB {
 	dbConn, err := sql.Open("pgx", dbAddress)
 	if err != nil {
-		// panic(err)
-		fmt.Printf("Unable to connect to database: %v\n", err)
-		return nil
+		panic(err)
 	}
 	/*dbConn, err := pgx.connect(context.Background(), dbAddress)
 	if err != nil {
@@ -46,9 +44,6 @@ func connect(dbAddress string) *sql.DB {
 
 func CreateTable(dbAddress string) {
 	dbConn := connect(dbAddress)
-	if dbConn == nil {
-		return
-	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -66,9 +61,6 @@ func CreateTable(dbAddress string) {
 
 func SetGauge(dbAddress string, id string, val *float64) bool {
 	dbConn := connect(dbAddress)
-	if dbConn == nil {
-		return false
-	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -83,9 +75,6 @@ func SetGauge(dbAddress string, id string, val *float64) bool {
 
 func UpdateCounter(dbAddress string, id string, val int64) bool {
 	dbConn := connect(dbAddress)
-	if dbConn == nil {
-		return false
-	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -100,9 +89,6 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 
 func StoreMetrics(handlerMetrics map[string]*metrics.Metric, dbAddress string) {
 	dbConn := connect(dbAddress)
-	if dbConn == nil {
-		return
-	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -118,15 +104,13 @@ func StoreMetrics(handlerMetrics map[string]*metrics.Metric, dbAddress string) {
 
 func Restore(dbAddress string) map[string]*metrics.Metric {
 	dbConn := connect(dbAddress)
-	if dbConn == nil {
-		return nil
-	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	rows, err := dbConn.QueryContext(ctx, "SELECT * FROM metrics")
 	if err != nil {
+		fmt.Println("Couldn't get metrics for restore")
 		return nil
 	}
 	restoreMetrics := make(map[string]*metrics.Metric)
@@ -156,9 +140,6 @@ func Restore(dbAddress string) map[string]*metrics.Metric {
 
 func Get(dbAddress string, id string, mType string) *metrics.Metric {
 	dbConn := connect(dbAddress)
-	if dbConn == nil {
-		return nil
-	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

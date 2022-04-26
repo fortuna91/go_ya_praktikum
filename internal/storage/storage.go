@@ -102,7 +102,7 @@ func Restore(handlerMetrics *metrics.Metrics, config configs.ServerConfig, dbAdd
 	fmt.Println("Restore metrics...")
 	var storedMetrics map[string]*metrics.Metric
 	if len(dbAddress) > 0 {
-		db.Restore(dbAddress)
+		storedMetrics = db.Restore(dbAddress)
 	} else {
 		storedMetrics, err = producer.ReadMetrics()
 		if err != nil {
