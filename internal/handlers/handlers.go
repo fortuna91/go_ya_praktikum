@@ -201,10 +201,10 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+		newDelta := Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
 
 		if UseDB {
-			if !db.UpdateCounter(DBAddress, metricRequest.ID, *metricRequest.Delta) {
+			if !db.UpdateCounter(DBAddress, metricRequest.ID, newDelta) {
 				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 				return
 			}
