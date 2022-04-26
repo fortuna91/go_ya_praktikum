@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"log"
 	"net/http"
 	"os"
@@ -49,12 +50,12 @@ func main() {
 	handlers.HashKey = config.Key
 
 	handlers.DBAddress = config.DB
-	/*if len(config.DB) > 0 {
-		handlers.UseDB = false
-		handlers.DBAddress = config.DB
+	if len(config.DB) > 0 {
+		// handlers.UseDB = false
+		// handlers.DBAddress = config.DB
 		db.CreateDB(config.DB)
 		db.CreateTable(config.DB)
-	}*/
+	}
 	if config.StoreInterval > 0 {
 		// true by default
 		handlers.StoreMetricImmediately = false
