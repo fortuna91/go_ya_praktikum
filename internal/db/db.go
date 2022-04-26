@@ -50,7 +50,7 @@ func CreateTable(dbAddress string) {
 	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s ("+
 		"id varchar(50) NOT NULL,"+
 		"type varchar(50) NOT NULL,"+
-		"delta integer,"+
+		"delta bigint,"+
 		"value float,"+
 		"CONSTRAINT id_type PRIMARY KEY(id,type));", tableName)
 	_, err := dbConn.ExecContext(ctx, query)
