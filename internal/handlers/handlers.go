@@ -186,8 +186,15 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		}
 		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 
-		if StoreMetricImmediately && len(StoreFile) > 0 {
-			storage.StoreMetrics(&Metrics, StoreFile)
+		if UseDB {
+			if !db.SetGauge(DBAddress, metricRequest.ID, metricRequest.Value) {
+				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			if StoreMetricImmediately && len(StoreFile) > 0 {
+				storage.StoreMetrics(&Metrics, StoreFile)
+			}
 		}
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
@@ -195,19 +202,15 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Empty metric delta", http.StatusBadRequest)
 			return
 		}
+
+		Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+
 		if UseDB {
 			if !db.UpdateCounter(DBAddress, metricRequest.ID, *metricRequest.Delta) {
 				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 				return
 			}
-			Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
-
-			if StoreMetricImmediately && len(StoreFile) > 0 {
-				storage.StoreMetrics(&Metrics, StoreFile)
-			}
 		} else {
-			Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
-
 			if StoreMetricImmediately && len(StoreFile) > 0 {
 				storage.StoreMetrics(&Metrics, StoreFile)
 			}
@@ -247,8 +250,8 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric ID", http.StatusBadRequest)
 		return
 	}
-	//var metric *metrics.Metric
-	metric := Metrics.Get(metricRequest.ID)
+	var metric *metrics.Metric
+	metric = Metrics.Get(metricRequest.ID)
 	/*if UseDB {
 		if metric = db.Get(DBAddress, metricRequest.ID, metricRequest.MType); metric == nil {
 			http.Error(w, "Couldn't get metric from DB", http.StatusNotFound)
