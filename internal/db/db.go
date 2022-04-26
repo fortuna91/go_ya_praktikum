@@ -19,7 +19,7 @@ const (
 // if we will have more than one sql query per request,move dbConn into handler
 
 func Ping(dbAddress string) bool {
-	dbConn := connect(dbAddress, true)
+	dbConn := connect(dbAddress, false)
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -30,6 +30,7 @@ func Ping(dbAddress string) bool {
 }
 
 func connect(dbAddress string, connectToDB bool) *sql.DB {
+	fmt.Println("dbAddress", dbAddress)
 	if connectToDB {
 		dbAddress = dbAddress + "/" + dbName
 	}
