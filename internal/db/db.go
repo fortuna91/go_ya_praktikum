@@ -173,6 +173,10 @@ func Restore(dbAddress string) map[string]*metrics.Metric {
 		}
 		restoreMetrics[resMetric.ID] = &resMetric
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil
+	}
 	return restoreMetrics
 }
 
