@@ -11,15 +11,12 @@ import (
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
-const (
-	tableName = "metrics"
-	dbName    = "storage"
-)
+const tableName = "metrics"
 
 // if we will have more than one sql query per request,move dbConn into handler
 
 func Ping(dbAddress string) bool {
-	dbConn := connect(dbAddress, false)
+	dbConn := connect(dbAddress)
 	if dbConn == nil {
 		return false
 	}
@@ -32,11 +29,8 @@ func Ping(dbAddress string) bool {
 	return true
 }
 
-func connect(dbAddress string, connectToDB bool) *sql.DB {
+func connect(dbAddress string) *sql.DB {
 	fmt.Println("dbAddress", dbAddress)
-	if connectToDB {
-		dbAddress = dbAddress + "/" + dbName
-	}
 	dbConn, err := sql.Open("pgx", dbAddress)
 	if err != nil {
 		// panic(err)
@@ -51,27 +45,8 @@ func connect(dbAddress string, connectToDB bool) *sql.DB {
 	return dbConn
 }
 
-func CreateDB(dbAddress string) {
-	dbConn := connect(dbAddress, false)
-	if dbConn == nil {
-		return
-	}
-	defer dbConn.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	/*_, err := dbConn.ExecContext(ctx, "SELECT 'CREATE DATABASE storagw' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'storage')\\gexec")
-	if err != nil {
-		panic(err)
-	}*/
-	query := fmt.Sprintf("CREATE DATABASE %s", dbName)
-	_, err := dbConn.ExecContext(ctx, query)
-	if err != nil {
-		fmt.Printf("Database %s exists: %s\n", dbName, err)
-	}
-}
-
 func CreateTable(dbAddress string) {
-	dbConn := connect(dbAddress, true)
+	dbConn := connect(dbAddress)
 	if dbConn == nil {
 		return
 	}
@@ -91,7 +66,7 @@ func CreateTable(dbAddress string) {
 }
 
 func SetGauge(dbAddress string, id string, val *float64) bool {
-	dbConn := connect(dbAddress, true)
+	dbConn := connect(dbAddress)
 	if dbConn == nil {
 		return false
 	}
@@ -108,7 +83,7 @@ func SetGauge(dbAddress string, id string, val *float64) bool {
 }
 
 func UpdateCounter(dbAddress string, id string, val int64) bool {
-	dbConn := connect(dbAddress, true)
+	dbConn := connect(dbAddress)
 	if dbConn == nil {
 		return false
 	}
@@ -125,7 +100,7 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 }
 
 func StoreMetrics(handlerMetrics map[string]*metrics.Metric, dbAddress string) {
-	dbConn := connect(dbAddress, true)
+	dbConn := connect(dbAddress)
 	if dbConn == nil {
 		return
 	}
@@ -143,7 +118,7 @@ func StoreMetrics(handlerMetrics map[string]*metrics.Metric, dbAddress string) {
 }
 
 func Restore(dbAddress string) map[string]*metrics.Metric {
-	dbConn := connect(dbAddress, true)
+	dbConn := connect(dbAddress)
 	if dbConn == nil {
 		return nil
 	}
@@ -181,7 +156,7 @@ func Restore(dbAddress string) map[string]*metrics.Metric {
 }
 
 func Get(dbAddress string, id string, mType string) *metrics.Metric {
-	dbConn := connect(dbAddress, true)
+	dbConn := connect(dbAddress)
 	if dbConn == nil {
 		return nil
 	}
