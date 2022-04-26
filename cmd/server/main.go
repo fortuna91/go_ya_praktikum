@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
 	"github.com/fortuna91/go_ya_praktikum/internal/server"
@@ -54,7 +54,8 @@ func main() {
 		handlers.DBAddress = config.DB
 		db.CreateDB(config.DB)
 		db.CreateTable(config.DB)
-	} else if config.StoreInterval > 0 {
+	}
+	if config.StoreInterval > 0 {
 		// true by default
 		handlers.StoreMetricImmediately = false
 		storeTicker := time.NewTicker(config.StoreInterval)

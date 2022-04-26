@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
 const (
