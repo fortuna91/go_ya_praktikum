@@ -45,7 +45,7 @@ func (metrics *Metrics) Get(id string) *Metric {
 	if metrics.values == nil {
 		return nil
 	}
-	fmt.Printf("Get %v = %v, %v\n", id, *metrics.values[id].Delta, *metrics.values[id].Value)
+	fmt.Printf("Get %v = %v\n", id, *metrics.values[id])
 	return metrics.values[id]
 }
 
@@ -89,6 +89,15 @@ func CalcHash(metric *Metric, key string) (hash string) {
 
 func (metric *Metric) SetHash(key string) {
 	metric.Hash = CalcHash(metric, key)
+}
+
+func (metric Metric) String() string {
+	if metric.MType == Gauge {
+		return fmt.Sprintf("id=%s, value=%v", metric.ID, *metric.Value)
+	} else if metric.MType == Counter {
+		return fmt.Sprintf("id=%s, delta=%v", metric.ID, *metric.Delta)
+	}
+	return ""
 }
 
 // for tests
