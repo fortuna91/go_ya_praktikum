@@ -96,10 +96,10 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := dbConn.ExecContext(ctx, "INSERT INTO metriics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = delta + $3;",
+	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = EXCLUDED.delta + $3;",
 		id, metrics.Counter, val)
 	if err != nil {
-		fmt.Errorf("couldn't set metric %s into DB", id)
+		fmt.Printf("Couldn't set metric %s into DB: %s\n", id, err)
 		return false
 	}
 	return true
@@ -110,15 +110,21 @@ func Get(dbAddress string, id string, mType string) *metrics.Metric {
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	resMetric := metrics.Metric{}
-	var delta int64
-	var value float64
+	var delta sql.NullInt64
+	var value sql.NullFloat64
+
 	err := dbConn.QueryRowContext(ctx, "SELECT * FROM metrics WHERE id=$1 AND type=$2", id, mType).Scan(&resMetric.ID, &resMetric.MType, &delta, &value)
 	if err != nil {
-		fmt.Errorf("couldn't get metric %s from DB", id)
+		fmt.Printf("Couldn't get metric %s from DB: %s\n", id, err)
 		return nil
 	}
-	resMetric.Delta = &delta
-	resMetric.Value = &value
+	if delta.Valid {
+		resMetric.Delta = &delta.Int64
+	}
+	if value.Valid {
+		resMetric.Value = &value.Float64
+	}
 	return &resMetric
 }

@@ -237,7 +237,6 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer reader.Close()
-
 	respBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("Couldn't read body %v\n", err)
@@ -250,10 +249,10 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric ID", http.StatusBadRequest)
 		return
 	}
-	metric := &metrics.Metric{}
+	var metric *metrics.Metric
 	if UseDB {
 		if metric = db.Get(DBAddress, metricRequest.ID, metricRequest.MType); metric == nil {
-			http.Error(w, "Couldn't get metric from DB", http.StatusInternalServerError)
+			http.Error(w, "Couldn't get metric from DB", http.StatusNotFound)
 			return
 		}
 	} else {
