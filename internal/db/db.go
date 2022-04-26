@@ -53,10 +53,10 @@ func connect(dbAddress string, connectToDB bool) *sql.DB {
 
 func CreateDB(dbAddress string) {
 	dbConn := connect(dbAddress, false)
-	return
 	if dbConn == nil {
 		return
 	}
+	return
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
