@@ -50,7 +50,7 @@ func main() {
 	handlers.HashKey = config.Key
 
 	if len(config.DB) > 0 {
-		handlers.UseDB = true
+		handlers.UseDB = false
 		handlers.DBAddress = config.DB
 		db.CreateDB(config.DB)
 		db.CreateTable(config.DB)
