@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
 	"github.com/fortuna91/go_ya_praktikum/internal/server"
@@ -49,12 +48,12 @@ func main() {
 
 	handlers.HashKey = config.Key
 
-	if len(config.DB) > 0 {
+	/*if len(config.DB) > 0 {
 		handlers.UseDB = false
 		handlers.DBAddress = config.DB
 		db.CreateDB(config.DB)
 		db.CreateTable(config.DB)
-	}
+	}*/
 	if config.StoreInterval > 0 {
 		// true by default
 		handlers.StoreMetricImmediately = false
