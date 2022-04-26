@@ -45,7 +45,7 @@ func (metrics *Metrics) Get(id string) *Metric {
 	if metrics.values == nil {
 		return nil
 	}
-	fmt.Printf("Get %v = %v\n", id, metrics.values[id])
+	fmt.Printf("Get %v = %v, %v\n", id, *metrics.values[id].Delta, *metrics.values[id].Value)
 	return metrics.values[id]
 }
 

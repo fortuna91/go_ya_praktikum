@@ -32,7 +32,9 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
-		storage.StoreMetrics(&handlers.Metrics, config.StoreFile)
+		if len(config.DB) > 0 {
+			storage.StoreMetrics(&handlers.Metrics, config.StoreFile)
+		}
 
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)
@@ -53,8 +55,7 @@ func main() {
 		handlers.DBAddress = config.DB
 		handlers.UseDB = true
 		db.CreateTable(config.DB)
-	}
-	if config.StoreInterval > 0 {
+	} else if config.StoreInterval > 0 {
 		// true by default
 		handlers.StoreMetricImmediately = false
 		storeTicker := time.NewTicker(config.StoreInterval)
