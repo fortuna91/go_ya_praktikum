@@ -48,6 +48,7 @@ func main() {
 
 	handlers.HashKey = config.Key
 
+	handlers.DBAddress = config.DB
 	/*if len(config.DB) > 0 {
 		handlers.UseDB = false
 		handlers.DBAddress = config.DB
