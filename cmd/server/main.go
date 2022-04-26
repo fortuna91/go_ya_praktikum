@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"log"
 	"net/http"
 	"os"
@@ -46,15 +47,19 @@ func main() {
 		storage.Restore(&handlers.Metrics, config)
 	}
 
-	// true by default
-	if config.StoreInterval > 0 {
+	handlers.HashKey = config.Key
+
+	if len(config.DB) > 0 {
+		handlers.UseDB = true
+		handlers.DBAddress = config.DB
+		db.CreateDB(config.DB)
+		db.CreateTable(config.DB)
+	} else if config.StoreInterval > 0 {
+		// true by default
 		handlers.StoreMetricImmediately = false
 		storeTicker := time.NewTicker(config.StoreInterval)
 		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
 	}
-
-	handlers.HashKey = config.Key
-	handlers.DBAddress = config.DB
 
 	fmt.Println("Start server on", config.Address)
 	err := server.ListenAndServe()

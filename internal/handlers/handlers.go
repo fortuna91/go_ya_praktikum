@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"io"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
-	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 )
 
 var Metrics = metrics.Metrics{}
@@ -23,7 +23,8 @@ var Metrics = metrics.Metrics{}
 var StoreMetricImmediately = true
 var StoreFile string
 var HashKey string
-var DBAddress string
+var UseDB = false
+var DBAddress = ""
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -183,23 +184,42 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Empty metric value", http.StatusBadRequest)
 			return
 		}
-		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
+		if UseDB {
+			if !db.SetGauge(DBAddress, metricRequest.ID, metricRequest.Value) {
+				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
+
+			if StoreMetricImmediately && len(StoreFile) > 0 {
+				storage.StoreMetrics(&Metrics, StoreFile)
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
 		if metricRequest.Delta == nil {
 			http.Error(w, "Empty metric delta", http.StatusBadRequest)
 			return
 		}
-		Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+		if UseDB {
+			if !db.UpdateCounter(DBAddress, metricRequest.ID, *metricRequest.Delta) {
+				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+
+			if StoreMetricImmediately && len(StoreFile) > 0 {
+				storage.StoreMetrics(&Metrics, StoreFile)
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Error(w, "Unknown metric type", http.StatusBadRequest)
 		return
 	}
 
-	if StoreMetricImmediately && len(StoreFile) > 0 {
-		storage.StoreMetrics(&Metrics, StoreFile)
-	}
 	// ??
 	metric := metrics.Metric{}
 	bodyResp, _ := json.Marshal(metric)
@@ -230,7 +250,15 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric ID", http.StatusBadRequest)
 		return
 	}
-	metric := Metrics.Get(metricRequest.ID)
+	metric := &metrics.Metric{}
+	if UseDB {
+		if metric = db.Get(DBAddress, metricRequest.ID, metricRequest.MType); metric == nil {
+			http.Error(w, "Couldn't get metric from DB", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		metric = Metrics.Get(metricRequest.ID)
+	}
 	if metric != nil {
 		if len(HashKey) > 0 {
 			metric.SetHash(HashKey)
@@ -254,10 +282,8 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PingDB(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("PING")
-	dbConn := db.Connect(DBAddress)
-	res := db.Ping(dbConn)
+func PingDB(w http.ResponseWriter, _ *http.Request) {
+	res := db.Ping(DBAddress)
 	if res {
 		w.WriteHeader(http.StatusOK)
 	} else {

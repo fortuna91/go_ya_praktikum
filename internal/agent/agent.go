@@ -85,7 +85,7 @@ func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 		request, _ := http.NewRequest(http.MethodPost, "http://"+config.Address+"/update", bytes.NewReader(body))
 		responseCode := SendRequest(&client, request)
 		if responseCode != 200 {
-			fmt.Printf("Error in request for %v: response code: %d", m.ID, responseCode)
+			fmt.Printf("Error in request for %v: response code: %d, \n", m.ID, responseCode)
 		}
 	}
 }
