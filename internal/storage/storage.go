@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"log"
 	"os"
 	"time"
@@ -99,10 +100,15 @@ func Restore(handlerMetrics *metrics.Metrics, config configs.ServerConfig, dbAdd
 	defer producer.Close()
 
 	fmt.Println("Restore metrics...")
-	storedMetrics, err := producer.ReadMetrics()
-	if err != nil {
-		fmt.Println("Error while reading")
-		log.Fatal(err)
+	var storedMetrics map[string]*metrics.Metric
+	if len(dbAddress) > 0 {
+		db.Restore(dbAddress)
+	} else {
+		storedMetrics, err = producer.ReadMetrics()
+		if err != nil {
+			fmt.Println("Error while reading")
+			log.Fatal(err)
+		}
 	}
 
 	handlerMetrics.RestoreMetrics(storedMetrics)

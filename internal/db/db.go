@@ -89,7 +89,7 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3;",
+	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = excluded.delta + $3;",
 		id, metrics.Counter, val)
 	if err != nil {
 		fmt.Printf("Couldn't set metric %s into DB: %s\n", id, err)
@@ -107,7 +107,7 @@ func StoreMetrics(handlerMetrics map[string]*metrics.Metric, dbAddress string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	for _, m := range handlerMetrics {
-		_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = excluded.delta + $3, value = $4;",
+		_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3, value = $4;",
 			m.ID, m.MType, m.Delta, m.Value)
 		if err != nil {
 			fmt.Printf("Couldn't set metric %s into DB: %s\n", m.ID, err)
