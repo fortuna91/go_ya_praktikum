@@ -3,7 +3,6 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"log"
 	"os"
 	"time"
@@ -71,14 +70,14 @@ func StoreMetricsTicker(storeTicker *time.Ticker, handlerMetrics *metrics.Metric
 	if len(config.StoreFile) > 0 {
 		for {
 			<-storeTicker.C
-			StoreMetrics(handlerMetrics, config.StoreFile, config.DB)
+			StoreMetrics(handlerMetrics, config.StoreFile)
 		}
 	} else {
 		fmt.Println("Do not store metrics")
 	}
 }
 
-func StoreMetrics(handlerMetrics *metrics.Metrics, storeFile string, dbAddress string) {
+func StoreMetrics(handlerMetrics *metrics.Metrics, storeFile string) {
 	producer, err := NewWriter(storeFile)
 	if err != nil {
 		log.Fatal(err)
@@ -87,12 +86,8 @@ func StoreMetrics(handlerMetrics *metrics.Metrics, storeFile string, dbAddress s
 
 	fmt.Println("Store metrics...")
 	currMetrics := handlerMetrics.List()
-	if len(dbAddress) > 0 {
-		db.StoreMetrics(currMetrics, dbAddress)
-	} else {
-		if err := producer.WriteMetrics(currMetrics); err != nil {
-			log.Fatal(err)
-		}
+	if err := producer.WriteMetrics(currMetrics); err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -104,15 +99,10 @@ func Restore(handlerMetrics *metrics.Metrics, config configs.ServerConfig, dbAdd
 	defer producer.Close()
 
 	fmt.Println("Restore metrics...")
-	var storedMetrics map[string]*metrics.Metric
-	if len(dbAddress) > 0 {
-		db.Restore(dbAddress)
-	} else {
-		storedMetrics, err = producer.ReadMetrics()
-		if err != nil {
-			fmt.Println("Error while reading")
-			log.Fatal(err)
-		}
+	storedMetrics, err := producer.ReadMetrics()
+	if err != nil {
+		fmt.Println("Error while reading")
+		log.Fatal(err)
 	}
 
 	handlerMetrics.RestoreMetrics(storedMetrics)

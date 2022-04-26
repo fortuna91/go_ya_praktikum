@@ -32,7 +32,7 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
-		storage.StoreMetrics(&handlers.Metrics, config.StoreFile, config.DB)
+		storage.StoreMetrics(&handlers.Metrics, config.StoreFile)
 
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)

@@ -187,7 +187,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 
 		if StoreMetricImmediately && len(StoreFile) > 0 {
-			storage.StoreMetrics(&Metrics, StoreFile, DBAddress)
+			storage.StoreMetrics(&Metrics, StoreFile)
 		}
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
@@ -204,7 +204,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
 
 			if StoreMetricImmediately && len(StoreFile) > 0 {
-				storage.StoreMetrics(&Metrics, StoreFile, DBAddress)
+				storage.StoreMetrics(&Metrics, StoreFile)
 			}
 		}
 		w.WriteHeader(http.StatusOK)
