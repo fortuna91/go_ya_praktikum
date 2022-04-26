@@ -107,7 +107,7 @@ func StoreMetrics(handlerMetrics map[string]*metrics.Metric, dbAddress string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	for _, m := range handlerMetrics {
-		_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3, value = $4;",
+		_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = excluded.delta + $3, value = $4;",
 			m.ID, m.MType, m.Delta, m.Value)
 		if err != nil {
 			fmt.Printf("Couldn't set metric %s into DB: %s\n", m.ID, err)
