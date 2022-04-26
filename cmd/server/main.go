@@ -51,6 +51,7 @@ func main() {
 
 	if len(config.DB) > 0 {
 		handlers.DBAddress = config.DB
+		handlers.UseDB = true
 		db.CreateTable(config.DB)
 	}
 	if config.StoreInterval > 0 {

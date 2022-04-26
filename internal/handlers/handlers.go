@@ -23,6 +23,7 @@ var Metrics = metrics.Metrics{}
 var StoreMetricImmediately = true
 var StoreFile string
 var HashKey string
+var UseDB = false
 var DBAddress = ""
 
 // fixme maybe for feature it has to be channel with mutex
@@ -194,10 +195,17 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Empty metric delta", http.StatusBadRequest)
 			return
 		}
-		Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+		if UseDB {
+			if !db.UpdateCounter(DBAddress, metricRequest.ID, *metricRequest.Delta) {
+				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
 
-		if StoreMetricImmediately && len(StoreFile) > 0 {
-			storage.StoreMetrics(&Metrics, StoreFile, DBAddress)
+			if StoreMetricImmediately && len(StoreFile) > 0 {
+				storage.StoreMetrics(&Metrics, StoreFile, DBAddress)
+			}
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -234,8 +242,15 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric ID", http.StatusBadRequest)
 		return
 	}
-
-	metric := Metrics.Get(metricRequest.ID)
+	var metric *metrics.Metric
+	if UseDB {
+		if metric = db.Get(DBAddress, metricRequest.ID, metricRequest.MType); metric == nil {
+			http.Error(w, "Couldn't get metric from DB", http.StatusNotFound)
+			return
+		}
+	} else {
+		metric = Metrics.Get(metricRequest.ID)
+	}
 	if metric != nil {
 		if len(HashKey) > 0 {
 			metric.SetHash(HashKey)

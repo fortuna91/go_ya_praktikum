@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"io"
 	"io/ioutil"
@@ -384,8 +383,6 @@ func TestSetGaugeMetricJSON(t *testing.T) {
 				t.Errorf("SendRequest() = %v, want %v", responseCode, tt.want)
 			}
 			if tt.want == 200 {
-				fmt.Println()
-				fmt.Println(handlers.Metrics.Get(tt.metricName))
 				if *handlers.Metrics.Get(tt.metricName).Value != tt.value {
 					t.Errorf("Wrong metric value = %v, want %v", handlers.Metrics.Get(tt.metricName), tt.value)
 				}

@@ -30,7 +30,6 @@ func Ping(dbAddress string) bool {
 }
 
 func connect(dbAddress string) *sql.DB {
-	fmt.Println("dbAddress", dbAddress)
 	dbConn, err := sql.Open("pgx", dbAddress)
 	if err != nil {
 		// panic(err)

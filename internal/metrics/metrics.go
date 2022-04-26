@@ -71,7 +71,6 @@ func (metrics *Metrics) List() map[string]*Metric {
 	if metrics.values == nil {
 		return map[string]*Metric{}
 	}
-	fmt.Println(metrics.values)
 	return metrics.values
 }
 
