@@ -21,7 +21,7 @@ type ServerConfig struct {
 	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore       bool          `env:"RESTORE" envDefault:"true"`
 	Key           string        `env:"KEY"`
-	DB            string        `env:"DATABASE_DSN"`
+	DB            string        `env:"DATABASE_DSN" envDefault:""`
 }
 
 func SetAgentConfig() AgentConfig {

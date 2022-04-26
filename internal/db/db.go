@@ -52,6 +52,7 @@ func connect(dbAddress string, connectToDB bool) *sql.DB {
 }
 
 func CreateDB(dbAddress string) {
+	return
 	dbConn := connect(dbAddress, false)
 	if dbConn == nil {
 		return
