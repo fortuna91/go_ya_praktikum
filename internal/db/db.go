@@ -20,6 +20,9 @@ const (
 
 func Ping(dbAddress string) bool {
 	dbConn := connect(dbAddress, false)
+	if dbConn == nil {
+		return false
+	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -36,7 +39,9 @@ func connect(dbAddress string, connectToDB bool) *sql.DB {
 	}
 	dbConn, err := sql.Open("pgx", dbAddress)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Printf("Unable to connect to database: %v\n", err)
+		return nil
 	}
 	/*dbConn, err := pgx.connect(context.Background(), dbAddress)
 	if err != nil {
@@ -48,6 +53,9 @@ func connect(dbAddress string, connectToDB bool) *sql.DB {
 
 func CreateDB(dbAddress string) {
 	dbConn := connect(dbAddress, false)
+	if dbConn == nil {
+		return
+	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -64,6 +72,9 @@ func CreateDB(dbAddress string) {
 
 func CreateTable(dbAddress string) {
 	dbConn := connect(dbAddress, true)
+	if dbConn == nil {
+		return
+	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -81,6 +92,9 @@ func CreateTable(dbAddress string) {
 
 func SetGauge(dbAddress string, id string, val *float64) bool {
 	dbConn := connect(dbAddress, true)
+	if dbConn == nil {
+		return false
+	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -95,6 +109,9 @@ func SetGauge(dbAddress string, id string, val *float64) bool {
 
 func UpdateCounter(dbAddress string, id string, val int64) bool {
 	dbConn := connect(dbAddress, true)
+	if dbConn == nil {
+		return false
+	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -109,6 +126,9 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 
 func Get(dbAddress string, id string, mType string) *metrics.Metric {
 	dbConn := connect(dbAddress, true)
+	if dbConn == nil {
+		return nil
+	}
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

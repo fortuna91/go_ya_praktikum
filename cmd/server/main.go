@@ -51,7 +51,7 @@ func main() {
 
 	handlers.DBAddress = config.DB
 	if len(config.DB) > 0 {
-		// handlers.UseDB = false
+		// handlers.UseDB = true
 		// handlers.DBAddress = config.DB
 		db.CreateDB(config.DB)
 		db.CreateTable(config.DB)
