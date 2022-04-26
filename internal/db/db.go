@@ -115,13 +115,65 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = EXCLUDED.delta + $3;",
+	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3;",
 		id, metrics.Counter, val)
 	if err != nil {
 		fmt.Printf("Couldn't set metric %s into DB: %s\n", id, err)
 		return false
 	}
 	return true
+}
+
+func StoreMetrics(handlerMetrics map[string]*metrics.Metric, dbAddress string) {
+	dbConn := connect(dbAddress, true)
+	if dbConn == nil {
+		return
+	}
+	defer dbConn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	for _, m := range handlerMetrics {
+		_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3, value = $4;",
+			m.ID, m.MType, m.Delta, m.Value)
+		if err != nil {
+			fmt.Printf("Couldn't set metric %s into DB: %s\n", m.ID, err)
+			return
+		}
+	}
+}
+
+func Restore(dbAddress string) map[string]*metrics.Metric {
+	dbConn := connect(dbAddress, true)
+	if dbConn == nil {
+		return nil
+	}
+	defer dbConn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.QueryContext(ctx, "SELECT * FROM metrics")
+	if err != nil {
+		return nil
+	}
+	restoreMetrics := make(map[string]*metrics.Metric)
+	for rows.Next() {
+		resMetric := metrics.Metric{}
+		var delta sql.NullInt64
+		var value sql.NullFloat64
+		err = rows.Scan(&resMetric.ID, &resMetric.MType, &delta, &value)
+		if err != nil {
+			fmt.Printf("Couldn't get metric %s from DB: %s\n", resMetric.ID, err)
+			return nil
+		}
+		if delta.Valid {
+			resMetric.Delta = &delta.Int64
+		}
+		if value.Valid {
+			resMetric.Value = &value.Float64
+		}
+		restoreMetrics[resMetric.ID] = &resMetric
+	}
+	return restoreMetrics
 }
 
 func Get(dbAddress string, id string, mType string) *metrics.Metric {

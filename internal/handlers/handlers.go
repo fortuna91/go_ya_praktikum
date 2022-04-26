@@ -23,7 +23,6 @@ var Metrics = metrics.Metrics{}
 var StoreMetricImmediately = true
 var StoreFile string
 var HashKey string
-var UseDB = false
 var DBAddress = ""
 
 // fixme maybe for feature it has to be channel with mutex
@@ -184,17 +183,10 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Empty metric value", http.StatusBadRequest)
 			return
 		}
-		if UseDB {
-			if !db.SetGauge(DBAddress, metricRequest.ID, metricRequest.Value) {
-				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
-				return
-			}
-		} else {
-			Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
+		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 
-			if StoreMetricImmediately && len(StoreFile) > 0 {
-				storage.StoreMetrics(&Metrics, StoreFile)
-			}
+		if StoreMetricImmediately && len(StoreFile) > 0 {
+			storage.StoreMetrics(&Metrics, StoreFile, DBAddress)
 		}
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
@@ -202,17 +194,10 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Empty metric delta", http.StatusBadRequest)
 			return
 		}
-		if UseDB {
-			if !db.UpdateCounter(DBAddress, metricRequest.ID, *metricRequest.Delta) {
-				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
-				return
-			}
-		} else {
-			Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+		Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
 
-			if StoreMetricImmediately && len(StoreFile) > 0 {
-				storage.StoreMetrics(&Metrics, StoreFile)
-			}
+		if StoreMetricImmediately && len(StoreFile) > 0 {
+			storage.StoreMetrics(&Metrics, StoreFile, DBAddress)
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -249,15 +234,8 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty metric ID", http.StatusBadRequest)
 		return
 	}
-	var metric *metrics.Metric
-	if UseDB {
-		if metric = db.Get(DBAddress, metricRequest.ID, metricRequest.MType); metric == nil {
-			http.Error(w, "Couldn't get metric from DB", http.StatusNotFound)
-			return
-		}
-	} else {
-		metric = Metrics.Get(metricRequest.ID)
-	}
+
+	metric := Metrics.Get(metricRequest.ID)
 	if metric != nil {
 		if len(HashKey) > 0 {
 			metric.SetHash(HashKey)

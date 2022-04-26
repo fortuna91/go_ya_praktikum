@@ -32,7 +32,7 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
-		storage.StoreMetrics(&handlers.Metrics, config.StoreFile)
+		storage.StoreMetrics(&handlers.Metrics, config.StoreFile, config.DB)
 
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)
@@ -44,17 +44,15 @@ func main() {
 	}()
 
 	if config.Restore {
-		storage.Restore(&handlers.Metrics, config)
+		storage.Restore(&handlers.Metrics, config, config.DB)
 	}
 
 	handlers.HashKey = config.Key
 
-	handlers.DBAddress = config.DB
 	if len(config.DB) > 0 {
-		// handlers.UseDB = true
-		// handlers.DBAddress = config.DB
+		handlers.DBAddress = config.DB
 		db.CreateDB(config.DB)
-		//db.CreateTable(config.DB)
+		db.CreateTable(config.DB)
 	}
 	if config.StoreInterval > 0 {
 		// true by default
