@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/fortuna91/go_ya_praktikum/internal/db"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"log"
 	"net/http"
 	"os"
@@ -45,7 +46,13 @@ func main() {
 	}()
 
 	if config.Restore {
-		storage.Restore(&handlers.Metrics, config, config.DB)
+		var storedMetrics map[string]*metrics.Metric
+		if len(config.DB) > 0 {
+			storedMetrics = db.Restore(config.DB)
+		} else {
+			storedMetrics = storage.Restore(config.StoreFile)
+		}
+		handlers.Metrics.RestoreMetrics(storedMetrics)
 	}
 
 	handlers.HashKey = config.Key
