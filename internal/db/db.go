@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -78,7 +79,7 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	// excluded.delta +
+	// excluded.delta
 	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3;",
 		id, metrics.Counter, val)
 	if err != nil {
@@ -124,6 +125,8 @@ func Restore(dbAddress string) map[string]*metrics.Metric {
 	return restoreMetrics
 }
 
+// SQLx
+
 func Get(dbAddress string, id string, mType string) *metrics.Metric {
 	dbConn := connect(dbAddress)
 	defer dbConn.Close()
@@ -146,4 +149,37 @@ func Get(dbAddress string, id string, mType string) *metrics.Metric {
 		resMetric.Value = &value.Float64
 	}
 	return &resMetric
+}
+
+func SetBatchMetrics(dbAddress string, metricList []metrics.Metric) error {
+	dbConn := connect(dbAddress)
+	defer dbConn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET value = excluded.value, delta = excluded.delta")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, m := range metricList {
+		if _, err = stmt.ExecContext(ctx, m.ID, m.MType, m.Delta, m.Value); err != nil {
+			if errRollback := tx.Rollback(); errRollback != nil {
+				log.Fatalf("update drivers: unable to rollback: %v", errRollback)
+			}
+			return err
+		}
+	}
+	// шаг 4 — сохраняем изменения
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }

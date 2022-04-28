@@ -36,7 +36,7 @@ func (metrics *Metrics) SetGauge(id string, val *float64) {
 		metrics.values = make(map[string]*Metric)
 	}
 	metrics.values[id] = &Metric{ID: id, MType: Gauge, Value: val}
-	fmt.Printf("Set %v = %v\n", id, *val)
+	fmt.Printf("Set %v\n", metrics.values[id])
 }
 
 func (metrics *Metrics) Get(id string) *Metric {
@@ -45,7 +45,7 @@ func (metrics *Metrics) Get(id string) *Metric {
 	if metrics.values == nil {
 		return nil
 	}
-	fmt.Printf("Get %v = %v\n", id, metrics.values[id])
+	fmt.Printf("Get %v\n", metrics.values[id])
 	return metrics.values[id]
 }
 
@@ -62,7 +62,7 @@ func (metrics *Metrics) UpdateCounter(id string, val int64) int64 {
 		newVal := currVal + val
 		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &newVal}
 	}
-	fmt.Printf("Set %v = %v. Now %v\n", id, val, *metrics.values[id].Delta)
+	fmt.Printf("Set %v. Recieved delta %v\n", metrics.values[id], val)
 	return *metrics.values[id].Delta
 }
 

@@ -280,6 +280,89 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("here")
+	reader := *getReader(w, r)
+	if reader == nil {
+		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
+	respBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("Couldn't read body %v\n", err)
+		http.Error(w, "Couldn't read body", http.StatusInternalServerError)
+		return
+	}
+	var metricsRequest []metrics.Metric
+	json.Unmarshal(respBody, &metricsRequest)
+
+	if len(HashKey) > 0 {
+		for _, metricRequest := range metricsRequest {
+			metricHash := metrics.CalcHash(&metricRequest, HashKey)
+			if metricHash != metricRequest.Hash {
+				fmt.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
+				http.Error(w, "Incorrect data hash", http.StatusBadRequest)
+				return
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var updatedMetricsRequest []metrics.Metric
+	for _, metricRequest := range metricsRequest {
+		if metricRequest.MType == metrics.Gauge {
+			if metricRequest.Value == nil {
+				http.Error(w, "Empty metric value", http.StatusBadRequest)
+				return
+			}
+			Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
+
+			if !UseDB && StoreMetricImmediately && len(StoreFile) > 0 {
+				storage.StoreMetrics(&Metrics, StoreFile)
+			}
+			updatedMetricsRequest = append(updatedMetricsRequest, metricRequest)
+		} else if metricRequest.MType == metrics.Counter {
+			if metricRequest.Delta == nil {
+				http.Error(w, "Empty metric delta", http.StatusBadRequest)
+				return
+			}
+
+			newDelta := Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
+			metricRequest.Delta = &newDelta
+
+			if !UseDB && StoreMetricImmediately && len(StoreFile) > 0 {
+				storage.StoreMetrics(&Metrics, StoreFile)
+			}
+			updatedMetricsRequest = append(updatedMetricsRequest, metricRequest)
+		} else {
+			http.Error(w, "Unknown metric type", http.StatusBadRequest)
+			return
+		}
+	}
+
+	fmt.Println(updatedMetricsRequest)
+
+	if UseDB {
+		if err = db.SetBatchMetrics(DBAddress, updatedMetricsRequest); err != nil {
+			fmt.Println(err)
+			http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusOK)
+
+	// ??
+	metric := metrics.Metric{}
+	bodyResp, _ := json.Marshal(metric)
+	if _, errBody := w.Write(bodyResp); errBody != nil {
+		fmt.Printf("Error sending the response: %v\n", errBody)
+		http.Error(w, "Error sending the response", http.StatusInternalServerError)
+	}
+}
+
 func PingDB(w http.ResponseWriter, _ *http.Request) {
 	res := db.Ping(DBAddress)
 	if res {

@@ -76,7 +76,7 @@ func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 			m.SetHash(config.Key)
 		}
 	}
-	for _, m := range *metricsList {
+	/*for _, m := range *metricsList {
 		body, err := json.Marshal(m)
 		if err != nil {
 			fmt.Printf("Cannot convert Metric to JSON: %v", err)
@@ -87,6 +87,16 @@ func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 		if responseCode != 200 {
 			fmt.Printf("Error in request for %v: response code: %d, \n", m.ID, responseCode)
 		}
+	}*/
+	body, err := json.Marshal(metricsList)
+	if err != nil {
+		fmt.Printf("Cannot convert Metric to JSON: %v", err)
+		return
+	}
+	request, _ := http.NewRequest(http.MethodPost, "http://"+config.Address+"/updates/", bytes.NewReader(body))
+	responseCode := SendRequest(&client, request)
+	if responseCode != 200 {
+		fmt.Printf("Error in request, response code: %d, \n", responseCode)
 	}
 }
 
