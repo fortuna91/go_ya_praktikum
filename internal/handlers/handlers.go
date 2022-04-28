@@ -247,7 +247,6 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	metric := Metrics.Get(metricRequest.ID)
-
 	if metric != nil {
 		if len(HashKey) > 0 {
 			metric.SetHash(HashKey)

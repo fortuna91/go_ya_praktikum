@@ -45,11 +45,7 @@ func main() {
 	}()
 
 	if config.Restore {
-		if len(config.DB) > 0 {
-			db.Restore(config.DB)
-		} else {
-			storage.Restore(&handlers.Metrics, config)
-		}
+		storage.Restore(&handlers.Metrics, config, config.DB)
 	}
 
 	handlers.HashKey = config.Key
@@ -65,7 +61,7 @@ func main() {
 		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
 	}
 
-	log.Print("Start server on", config.Address)
+	log.Printf("Start server on %s", config.Address)
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
