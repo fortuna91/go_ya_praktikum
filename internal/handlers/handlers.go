@@ -3,11 +3,11 @@ package handlers
 import (
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -30,7 +30,7 @@ var DBAddress = ""
 // var CountChannel = make(chan int64)
 
 func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Got it...")
+	log.Println("Got it...")
 	val := chi.URLParam(r, "value")
 	if val == "" {
 		http.Error(w, "Empty value", http.StatusNotFound)
@@ -38,7 +38,7 @@ func SetGaugeMetric(w http.ResponseWriter, r *http.Request) {
 	}
 	floatVal, err := strconv.ParseFloat(val, 64)
 	if err != nil {
-		fmt.Printf("Parse error: %v\n", err)
+		log.Printf("Parse error: %v\n", err)
 		http.Error(w, "Wrong metric value", http.StatusBadRequest)
 		return
 	}
@@ -56,7 +56,7 @@ func SetCounterMetric(w http.ResponseWriter, r *http.Request) {
 	}
 	countVal, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
-		fmt.Printf("Parse error: %v\n", err)
+		log.Printf("Parse error: %v\n", err)
 		http.Error(w, "Wrong metric value", http.StatusBadRequest)
 		return
 	}
@@ -79,7 +79,7 @@ func GetMetric(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(val))
 		if err != nil {
-			fmt.Printf("Error sending the response: %v\n", err)
+			log.Printf("Error sending the response: %v\n", err)
 			http.Error(w, "Error sending the response", http.StatusInternalServerError)
 		}
 	} else {
@@ -122,7 +122,7 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	}
 	errEx := tmpl.Execute(w, listMetrics)
 	if errEx != nil {
-		fmt.Printf("Error sending the response: %v\n", errEx)
+		log.Printf("Error sending the response: %v\n", errEx)
 	}
 }
 
@@ -158,7 +158,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 
 	respBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Printf("Couldn't read body %v\n", err)
+		log.Printf("Couldn't read body %v\n", err)
 		http.Error(w, "Couldn't read body", http.StatusInternalServerError)
 		return
 	}
@@ -172,7 +172,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	if len(HashKey) > 0 {
 		metricHash := metrics.CalcHash(&metricRequest, HashKey)
 		if metricHash != metricRequest.Hash {
-			fmt.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
+			log.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
 			http.Error(w, "Incorrect data hash", http.StatusBadRequest)
 			return
 		}
@@ -187,7 +187,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 
 		if UseDB {
-			if !db.SetGauge(DBAddress, metricRequest.ID, metricRequest.Value) {
+			if err = db.SetGauge(DBAddress, metricRequest.ID, metricRequest.Value); err != nil {
 				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 				return
 			}
@@ -204,7 +204,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		newDelta := Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
 
 		if UseDB {
-			if !db.UpdateCounter(DBAddress, metricRequest.ID, newDelta) {
+			if err = db.UpdateCounter(DBAddress, metricRequest.ID, newDelta); err != nil {
 				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 				return
 			}
@@ -222,7 +222,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	bodyResp, _ := json.Marshal(metric)
 	_, errBody := w.Write(bodyResp)
 	if errBody != nil {
-		fmt.Printf("Error sending the response: %v\n", errBody)
+		log.Printf("Error sending the response: %v\n", errBody)
 		http.Error(w, "Error sending the response", http.StatusInternalServerError)
 	}
 }
@@ -236,7 +236,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	defer reader.Close()
 	respBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Printf("Couldn't read body %v\n", err)
+		log.Printf("Couldn't read body %v\n", err)
 		http.Error(w, "Couldn't read body", http.StatusInternalServerError)
 		return
 	}
@@ -263,7 +263,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		}
 		bodyResp, err := json.Marshal(metric)
 		if err != nil {
-			fmt.Printf("Cannot convert Metric to JSON: %v", err)
+			log.Printf("Cannot convert Metric to JSON: %v", err)
 			http.Error(w, "Error sending the response", http.StatusInternalServerError)
 			return
 		}
@@ -271,7 +271,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, errBody := w.Write(bodyResp)
 		if errBody != nil {
-			fmt.Printf("Error sending the response: %v\n", errBody)
+			log.Printf("Error sending the response: %v\n", errBody)
 			http.Error(w, "Error sending the response", http.StatusInternalServerError)
 			return
 		}
@@ -281,7 +281,6 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("here")
 	reader := *getReader(w, r)
 	if reader == nil {
 		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
@@ -291,7 +290,7 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 
 	respBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Printf("Couldn't read body %v\n", err)
+		log.Printf("Couldn't read body %v\n", err)
 		http.Error(w, "Couldn't read body", http.StatusInternalServerError)
 		return
 	}
@@ -302,7 +301,7 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 		for _, metricRequest := range metricsRequest {
 			metricHash := metrics.CalcHash(&metricRequest, HashKey)
 			if metricHash != metricRequest.Hash {
-				fmt.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
+				log.Printf("Incorrect data hash: %s != %s\n", metricRequest.Hash, metricHash)
 				http.Error(w, "Incorrect data hash", http.StatusBadRequest)
 				return
 			}
@@ -343,11 +342,9 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Println(updatedMetricsRequest)
-
 	if UseDB {
 		if err = db.SetBatchMetrics(DBAddress, updatedMetricsRequest); err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 			return
 		}
@@ -358,7 +355,7 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 	metric := metrics.Metric{}
 	bodyResp, _ := json.Marshal(metric)
 	if _, errBody := w.Write(bodyResp); errBody != nil {
-		fmt.Printf("Error sending the response: %v\n", errBody)
+		log.Printf("Error sending the response: %v\n", errBody)
 		http.Error(w, "Error sending the response", http.StatusInternalServerError)
 	}
 }

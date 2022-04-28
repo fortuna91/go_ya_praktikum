@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -26,7 +27,7 @@ type Metrics struct {
 
 func (metrics *Metrics) RestoreMetrics(values map[string]*Metric) {
 	metrics.values = values
-	fmt.Printf("Metrics were restored: %v\n", values)
+	log.Printf("Metrics were restored: %v\n", values)
 }
 
 func (metrics *Metrics) SetGauge(id string, val *float64) {
@@ -36,7 +37,7 @@ func (metrics *Metrics) SetGauge(id string, val *float64) {
 		metrics.values = make(map[string]*Metric)
 	}
 	metrics.values[id] = &Metric{ID: id, MType: Gauge, Value: val}
-	fmt.Printf("Set %v\n", metrics.values[id])
+	log.Printf("Set %v\n", metrics.values[id])
 }
 
 func (metrics *Metrics) Get(id string) *Metric {
@@ -45,7 +46,7 @@ func (metrics *Metrics) Get(id string) *Metric {
 	if metrics.values == nil {
 		return nil
 	}
-	fmt.Printf("Get %v\n", metrics.values[id])
+	log.Printf("Get %v\n", metrics.values[id])
 	return metrics.values[id]
 }
 
@@ -62,7 +63,7 @@ func (metrics *Metrics) UpdateCounter(id string, val int64) int64 {
 		newVal := currVal + val
 		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &newVal}
 	}
-	fmt.Printf("Set %v. Recieved delta %v\n", metrics.values[id], val)
+	log.Printf("Set %v. Recieved delta %v\n", metrics.values[id], val)
 	return *metrics.values[id].Delta
 }
 

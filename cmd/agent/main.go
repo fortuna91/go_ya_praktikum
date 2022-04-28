@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,13 +20,13 @@ func main() {
 		s := <-sigChan
 		switch s {
 		case syscall.SIGINT:
-			fmt.Println("Signal interrupt triggered.")
+			log.Print("Signal interrupt triggered.")
 			os.Exit(0)
 		case syscall.SIGTERM:
-			fmt.Println("Signal terminte triggered.")
+			log.Print("Signal terminte triggered.")
 			os.Exit(0)
 		case syscall.SIGQUIT:
-			fmt.Println("Signal quit triggered.")
+			log.Print("Signal quit triggered.")
 			os.Exit(0)
 		default:
 			fmt.Println("Unknown signal.")

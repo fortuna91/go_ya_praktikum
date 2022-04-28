@@ -74,7 +74,7 @@ func StoreMetricsTicker(storeTicker *time.Ticker, handlerMetrics *metrics.Metric
 			StoreMetrics(handlerMetrics, config.StoreFile)
 		}
 	} else {
-		fmt.Println("Do not store metrics")
+		log.Println("Do not store metrics")
 	}
 }
 
@@ -99,15 +99,14 @@ func Restore(handlerMetrics *metrics.Metrics, config configs.ServerConfig, dbAdd
 	}
 	defer producer.Close()
 
-	fmt.Println("Restore metrics...")
+	log.Println("Restore metrics...")
 	var storedMetrics map[string]*metrics.Metric
 	if len(dbAddress) > 0 {
 		storedMetrics = db.Restore(dbAddress)
 	} else {
 		storedMetrics, err = producer.ReadMetrics()
 		if err != nil {
-			fmt.Println("Error while reading")
-			log.Fatal(err)
+			log.Fatalf("Error while reading: %v", err)
 		}
 	}
 

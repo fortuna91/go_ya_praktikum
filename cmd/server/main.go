@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"log"
 	"net/http"
@@ -62,7 +61,7 @@ func main() {
 		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
 	}
 
-	fmt.Println("Start server on", config.Address)
+	log.Print("Start server on", config.Address)
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)

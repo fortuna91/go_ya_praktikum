@@ -60,7 +60,7 @@ func CreateTable(dbAddress string) {
 	}
 }
 
-func SetGauge(dbAddress string, id string, val *float64) bool {
+func SetGauge(dbAddress string, id string, val *float64) error {
 	dbConn := connect(dbAddress)
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -68,13 +68,12 @@ func SetGauge(dbAddress string, id string, val *float64) bool {
 	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET value = $3;",
 		id, metrics.Gauge, *val)
 	if err != nil {
-		fmt.Printf("Couldn't set metric %s into DB: %s\n", id, err)
-		return false
+		return fmt.Errorf("Couldn't set metric %s into DB: %s\n", id, err)
 	}
-	return true
+	return nil
 }
 
-func UpdateCounter(dbAddress string, id string, val int64) bool {
+func UpdateCounter(dbAddress string, id string, val int64) error {
 	dbConn := connect(dbAddress)
 	defer dbConn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -83,10 +82,9 @@ func UpdateCounter(dbAddress string, id string, val int64) bool {
 	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3;",
 		id, metrics.Counter, val)
 	if err != nil {
-		fmt.Printf("Couldn't set metric %s into DB: %s\n", id, err)
-		return false
+		return fmt.Errorf("Couldn't set metric %s into DB: %s\n", id, err)
 	}
-	return true
+	return nil
 }
 
 func Restore(dbAddress string) map[string]*metrics.Metric {
@@ -97,7 +95,7 @@ func Restore(dbAddress string) map[string]*metrics.Metric {
 
 	rows, err := dbConn.QueryContext(ctx, "SELECT * FROM metrics")
 	if err != nil {
-		fmt.Println("Couldn't get metrics for restore")
+		log.Println("Couldn't get metrics for restore")
 		return nil
 	}
 	restoreMetrics := make(map[string]*metrics.Metric)
@@ -107,7 +105,7 @@ func Restore(dbAddress string) map[string]*metrics.Metric {
 		var value sql.NullFloat64
 		err = rows.Scan(&resMetric.ID, &resMetric.MType, &delta, &value)
 		if err != nil {
-			fmt.Printf("Couldn't get metric %s from DB: %s\n", resMetric.ID, err)
+			log.Printf("Couldn't get metric %s from DB: %s\n", resMetric.ID, err)
 			return nil
 		}
 		if delta.Valid {
@@ -139,7 +137,7 @@ func Get(dbAddress string, id string, mType string) *metrics.Metric {
 
 	err := dbConn.QueryRowContext(ctx, "SELECT * FROM metrics WHERE id=$1 AND type=$2", id, mType).Scan(&resMetric.ID, &resMetric.MType, &delta, &value)
 	if err != nil {
-		fmt.Printf("Couldn't get metric %s from DB: %s\n", id, err)
+		log.Printf("Couldn't get metric %s from DB: %s\n", id, err)
 		return nil
 	}
 	if delta.Valid {

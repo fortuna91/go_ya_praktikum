@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -90,18 +91,18 @@ func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 	}*/
 	body, err := json.Marshal(metricsList)
 	if err != nil {
-		fmt.Printf("Cannot convert Metric to JSON: %v", err)
+		log.Printf("Cannot convert Metric to JSON: %v", err)
 		return
 	}
 	request, _ := http.NewRequest(http.MethodPost, "http://"+config.Address+"/updates/", bytes.NewReader(body))
 	responseCode := SendRequest(&client, request)
 	if responseCode != 200 {
-		fmt.Printf("Error in request, response code: %d, \n", responseCode)
+		log.Printf("Error in request, response code: %d, \n", responseCode)
 	}
 }
 
 func RunAgent() {
-	fmt.Println("Start sending metrics...")
+	log.Println("Start sending metrics...")
 
 	config := configs.SetAgentConfig()
 
@@ -119,7 +120,7 @@ func RunAgent() {
 		for {
 			<-reportTicker.C
 			metrics := <-ch
-			fmt.Println("Send metrics...")
+			log.Println("Send metrics...")
 			SendMetrics(&metrics, config)
 		}
 	}()
