@@ -45,7 +45,11 @@ func main() {
 	}()
 
 	if config.Restore {
-		storage.Restore(&handlers.Metrics, config, config.DB)
+		if len(config.DB) > 0 {
+			db.Restore(config.DB)
+		} else {
+			storage.Restore(&handlers.Metrics, config)
+		}
 	}
 
 	handlers.HashKey = config.Key

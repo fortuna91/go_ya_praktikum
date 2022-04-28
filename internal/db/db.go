@@ -174,7 +174,6 @@ func SetBatchMetrics(dbAddress string, metricList []metrics.Metric) error {
 			return err
 		}
 	}
-	// шаг 4 — сохраняем изменения
 	err = tx.Commit()
 	if err != nil {
 		return err

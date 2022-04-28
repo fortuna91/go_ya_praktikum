@@ -247,16 +247,7 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	metric := Metrics.Get(metricRequest.ID)
-	/*
-		var metric *metrics.Metric
-		if UseDB {
-			if metric = db.Get(DBAddress, metricRequest.ID, metricRequest.MType); metric == nil {
-				http.Error(w, "Couldn't get metric from DB", http.StatusNotFound)
-				return
-			}
-		} else {
-			metric = Metrics.Get(metricRequest.ID)
-		}*/
+
 	if metric != nil {
 		if len(HashKey) > 0 {
 			metric.SetHash(HashKey)
