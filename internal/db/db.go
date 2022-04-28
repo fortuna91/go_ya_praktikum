@@ -68,7 +68,7 @@ func SetGauge(dbAddress string, id string, val *float64) error {
 	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET value = $3;",
 		id, metrics.Gauge, *val)
 	if err != nil {
-		return fmt.Errorf("Couldn't set metric %s into DB: %s\n", id, err)
+		return fmt.Errorf("couldn't set metric %s into DB: %s", id, err)
 	}
 	return nil
 }
@@ -82,7 +82,7 @@ func UpdateCounter(dbAddress string, id string, val int64) error {
 	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET delta = $3;",
 		id, metrics.Counter, val)
 	if err != nil {
-		return fmt.Errorf("Couldn't set metric %s into DB: %s\n", id, err)
+		return fmt.Errorf("couldn't set metric %s into DB: %s", id, err)
 	}
 	return nil
 }
