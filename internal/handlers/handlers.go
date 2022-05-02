@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"compress/gzip"
+	"database/sql"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"html/template"
@@ -24,7 +25,7 @@ var StoreMetricImmediately = true
 var StoreFile string
 var HashKey string
 var UseDB = false
-var DBAddress = ""
+var DB *sql.DB
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -187,7 +188,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 
 		if UseDB {
-			if err = db.SetGauge(DBAddress, metricRequest.ID, metricRequest.Value); err != nil {
+			if err = db.SetGauge(DB, metricRequest.ID, metricRequest.Value); err != nil {
 				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 				return
 			}
@@ -204,7 +205,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		newDelta := Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
 
 		if UseDB {
-			if err = db.UpdateCounter(DBAddress, metricRequest.ID, newDelta); err != nil {
+			if err = db.UpdateCounter(DB, metricRequest.ID, newDelta); err != nil {
 				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 				return
 			}
@@ -333,7 +334,7 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if UseDB {
-		if err = db.SetBatchMetrics(DBAddress, updatedMetricsRequest); err != nil {
+		if err = db.SetBatchMetrics(DB, updatedMetricsRequest); err != nil {
 			log.Println(err)
 			http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 			return
@@ -351,7 +352,7 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func PingDB(w http.ResponseWriter, _ *http.Request) {
-	res := db.Ping(DBAddress)
+	res := db.Ping(DB)
 	if res {
 		w.WriteHeader(http.StatusOK)
 	} else {

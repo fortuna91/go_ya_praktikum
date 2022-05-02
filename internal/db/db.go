@@ -16,12 +16,7 @@ const tableName = "metrics"
 
 // if we will have more than one sql query per request,move dbConn into handler
 
-func Ping(dbAddress string) bool {
-	dbConn := connect(dbAddress)
-	if dbConn == nil {
-		return false
-	}
-	defer dbConn.Close()
+func Ping(dbConn *sql.DB) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	if err := dbConn.PingContext(ctx); err != nil {
@@ -30,22 +25,20 @@ func Ping(dbAddress string) bool {
 	return true
 }
 
-func connect(dbAddress string) *sql.DB {
+func Connect(dbAddress string) *sql.DB {
 	dbConn, err := sql.Open("pgx", dbAddress)
 	if err != nil {
 		panic(err)
 	}
-	/*dbConn, err := pgx.connect(context.Background(), dbAddress)
+	/*dbConn, err := pgx.Connect(context.Background(), dbAddress)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Unable to Connect to database: %v\n", err)
 		os.Exit(1)
 	}*/
 	return dbConn
 }
 
-func CreateTable(dbAddress string) {
-	dbConn := connect(dbAddress)
-	defer dbConn.Close()
+func CreateTable(dbConn *sql.DB) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s ("+
@@ -60,9 +53,7 @@ func CreateTable(dbAddress string) {
 	}
 }
 
-func SetGauge(dbAddress string, id string, val *float64) error {
-	dbConn := connect(dbAddress)
-	defer dbConn.Close()
+func SetGauge(dbConn *sql.DB, id string, val *float64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_, err := dbConn.ExecContext(ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT id_type DO UPDATE SET value = $3;",
@@ -73,9 +64,7 @@ func SetGauge(dbAddress string, id string, val *float64) error {
 	return nil
 }
 
-func UpdateCounter(dbAddress string, id string, val int64) error {
-	dbConn := connect(dbAddress)
-	defer dbConn.Close()
+func UpdateCounter(dbConn *sql.DB, id string, val int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	// excluded.delta
@@ -87,9 +76,7 @@ func UpdateCounter(dbAddress string, id string, val int64) error {
 	return nil
 }
 
-func Restore(dbAddress string) map[string]*metrics.Metric {
-	dbConn := connect(dbAddress)
-	defer dbConn.Close()
+func Restore(dbConn *sql.DB) map[string]*metrics.Metric {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -125,9 +112,7 @@ func Restore(dbAddress string) map[string]*metrics.Metric {
 
 // SQLx
 
-func Get(dbAddress string, id string, mType string) *metrics.Metric {
-	dbConn := connect(dbAddress)
-	defer dbConn.Close()
+func Get(dbConn *sql.DB, id string, mType string) *metrics.Metric {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -149,9 +134,7 @@ func Get(dbAddress string, id string, mType string) *metrics.Metric {
 	return &resMetric
 }
 
-func SetBatchMetrics(dbAddress string, metricList []metrics.Metric) error {
-	dbConn := connect(dbAddress)
-	defer dbConn.Close()
+func SetBatchMetrics(dbConn *sql.DB, metricList []metrics.Metric) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

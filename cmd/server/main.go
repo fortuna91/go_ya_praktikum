@@ -47,8 +47,8 @@ func main() {
 
 	if config.Restore {
 		var storedMetrics map[string]*metrics.Metric
-		if len(config.DB) > 0 {
-			storedMetrics = db.Restore(config.DB)
+		if config.DB == "" {
+			storedMetrics = db.Restore(handlers.DB)
 		} else {
 			storedMetrics = storage.Restore(config.StoreFile)
 		}
@@ -57,10 +57,11 @@ func main() {
 
 	handlers.HashKey = config.Key
 
-	if len(config.DB) > 0 {
-		handlers.DBAddress = config.DB
+	if config.DB == "" {
+		handlers.DB = db.Connect(config.DB)
+		defer handlers.DB.Close()
 		handlers.UseDB = true
-		db.CreateTable(config.DB)
+		db.CreateTable(handlers.DB)
 	} else if config.StoreInterval > 0 {
 		// true by default
 		handlers.StoreMetricImmediately = false
