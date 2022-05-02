@@ -32,8 +32,9 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
-		if len(config.DB) > 0 {
+		if handlers.UseDB {
 			storage.StoreMetrics(&handlers.Metrics, config.StoreFile)
+			handlers.DB.Close()
 		}
 
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
@@ -59,7 +60,7 @@ func main() {
 
 	if config.DB == "" {
 		handlers.DB = db.Connect(config.DB)
-		defer handlers.DB.Close()
+		// defer handlers.DB.Close()
 		handlers.UseDB = true
 		db.CreateTable(handlers.DB)
 	} else if config.StoreInterval > 0 {
