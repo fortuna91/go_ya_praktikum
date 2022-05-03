@@ -64,7 +64,7 @@ func GetNewMetrics() []*metrics.Metric {
 	v, _ := mem.VirtualMemory()
 	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Total), ID: "TotalMemory", MType: metrics.Gauge})
 	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Free), ID: "FreeMemory", MType: metrics.Gauge})
-	metricsList = append(metricsList, &metrics.Metric{Value: &v.UsedPercent, ID: "CPUutilization1", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Used), ID: "CPUutilization1", MType: metrics.Gauge})
 	return metricsList
 }
 
@@ -117,42 +117,48 @@ func RunAgent() {
 
 	pollTicker := time.NewTicker(config.PollInterval)
 	reportTicker := time.NewTicker(config.ReportInterval)
-	ch := make(chan []*metrics.Metric)
+
+	chRuntime := make(chan []*metrics.Metric)
+	chGopsutil := make(chan []*metrics.Metric)
+	mergedCh := make(chan []*metrics.Metric)
 
 	go func() {
 		for {
-			<-ch
+			<-mergedCh
 		}
 	}()
 
 	go func() {
 		for {
 			<-reportTicker.C
-			metrics := <-ch
+			metricsList := <-mergedCh
 			log.Println("Send metrics...")
-			SendMetrics(&metrics, config)
+			SendMetrics(&metricsList, config)
 		}
 	}()
 
 	go func() {
 		for {
-			var i int64 = 0
-			for {
-				<-pollTicker.C
-				i++
-				metrics := GetNewMetrics()
-				ch <- metrics
-			}
+			<-pollTicker.C
+			metricsList := GetNewMetrics()
+			chGopsutil <- metricsList
 		}
 	}()
 
-	for {
+	go func() {
 		var i int64 = 0
 		for {
 			<-pollTicker.C
 			i++
-			metrics := GetMetrics(i)
-			ch <- metrics
+			metricsList := GetMetrics(i)
+			chRuntime <- metricsList
 		}
+	}()
+
+	for {
+		rtMetrics := <-chRuntime
+		guMetrics := <-chGopsutil
+		metricsList := append(rtMetrics, guMetrics...)
+		mergedCh <- metricsList
 	}
 }
