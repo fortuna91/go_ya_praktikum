@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"math/rand"
 	"net/http"
 	"runtime"
 	"time"
-
-	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
 func getFloat64Pointer(val uint64) *float64 {
@@ -54,8 +54,17 @@ func GetMetrics(count int64) []*metrics.Metric {
 	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.TotalAlloc), ID: "TotalAlloc", MType: metrics.Gauge})
 
 	metricsList = append(metricsList, &metrics.Metric{Delta: &count, ID: "PollCount", MType: metrics.Counter}) // TODO
-	val25 := rand.Float64()
-	metricsList = append(metricsList, &metrics.Metric{Value: &val25, ID: "RandomValue", MType: metrics.Gauge})
+	randVal := rand.Float64()
+	metricsList = append(metricsList, &metrics.Metric{Value: &randVal, ID: "RandomValue", MType: metrics.Gauge})
+	return metricsList
+}
+
+func GetNewMetrics() []*metrics.Metric {
+	var metricsList []*metrics.Metric
+	v, _ := mem.VirtualMemory()
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Total), ID: "TotalMemory", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Free), ID: "FreeMemory", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: &v.UsedPercent, ID: "CPUutilization1", MType: metrics.Gauge})
 	return metricsList
 }
 
@@ -122,6 +131,18 @@ func RunAgent() {
 			metrics := <-ch
 			log.Println("Send metrics...")
 			SendMetrics(&metrics, config)
+		}
+	}()
+
+	go func() {
+		for {
+			var i int64 = 0
+			for {
+				<-pollTicker.C
+				i++
+				metrics := GetNewMetrics()
+				ch <- metrics
+			}
 		}
 	}()
 
