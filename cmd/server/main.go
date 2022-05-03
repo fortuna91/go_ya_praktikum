@@ -46,20 +46,11 @@ func main() {
 		log.Println("Server was stopped correctly")
 	}()
 
-	if config.Restore {
-		var storedMetrics map[string]*metrics.Metric
-		if len(config.DB) > 0 {
-			storedMetrics = db.Restore(handlers.DB)
-		} else {
-			storedMetrics = storage.Restore(config.StoreFile)
-		}
-		handlers.Metrics.RestoreMetrics(storedMetrics)
-	}
-
 	handlers.HashKey = config.Key
 
 	if len(config.DB) > 0 {
 		handlers.DB = db.Connect(config.DB)
+		handlers.DBAddress = config.DB
 		// defer handlers.DB.Close()
 		handlers.UseDB = true
 		db.CreateTable(handlers.DB)
@@ -68,6 +59,16 @@ func main() {
 		handlers.StoreMetricImmediately = false
 		storeTicker := time.NewTicker(config.StoreInterval)
 		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
+	}
+
+	if config.Restore {
+		var storedMetrics map[string]*metrics.Metric
+		if len(config.DB) > 0 {
+			storedMetrics = db.Restore(handlers.DB)
+		} else {
+			storedMetrics = storage.Restore(config.StoreFile)
+		}
+		handlers.Metrics.RestoreMetrics(storedMetrics)
 	}
 
 	log.Printf("Start server on %s", config.Address)
