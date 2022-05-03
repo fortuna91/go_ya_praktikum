@@ -26,7 +26,6 @@ var StoreFile string
 var HashKey string
 var UseDB = false
 var DB *sql.DB
-var DBAddress = ""
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)

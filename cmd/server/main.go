@@ -50,8 +50,6 @@ func main() {
 
 	if len(config.DB) > 0 {
 		handlers.DB = db.Connect(config.DB)
-		handlers.DBAddress = config.DB
-		// defer handlers.DB.Close()
 		handlers.UseDB = true
 		db.CreateTable(handlers.DB)
 	} else if config.StoreInterval > 0 {
