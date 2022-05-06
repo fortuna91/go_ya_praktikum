@@ -178,14 +178,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
-
-		if StoreMetrics {
-			if StoreMetricImmediately {
-				Storage.StoreBatchMetrics(ctx, *Metrics.List())
-			} else if err := Storage.StoreMetric(ctx, &metricRequest); err != nil {
-				http.Error(w, "Couldn't store metric", http.StatusInternalServerError)
-			}
-		}
+		
 		newMetric = metricRequest
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
