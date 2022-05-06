@@ -104,10 +104,6 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	</html>`
 
 	listMetrics := Metrics.List()
-	metricKeys := make([]string, 0, len(*listMetrics))
-	for _, m := range *listMetrics {
-		metricKeys = append(metricKeys, m.ID)
-	}
 
 	w.Header().Set("Content-Type", "text/html")
 	tmpl, err := template.New("index").Parse(tmplHTML)
