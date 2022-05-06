@@ -2,30 +2,28 @@ package handlers
 
 import (
 	"compress/gzip"
-	"database/sql"
+	"context"
 	"encoding/json"
+	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"sort"
 	"strconv"
+	"time"
 
-	"github.com/fortuna91/go_ya_praktikum/internal/db"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
-	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 )
 
 var Metrics = metrics.Metrics{}
 
 // fixme: Do better
-var StoreMetricImmediately = true
-var StoreFile string
 var HashKey string
-var UseDB = false
-var DB *sql.DB
+var StoreMetrics = false
+var StoreMetricImmediately = false
+var Storage storage.Storage
 
 // fixme maybe for feature it has to be channel with mutex
 // var CountChannel = make(chan int64)
@@ -105,15 +103,10 @@ func ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	</table>
 	</html>`
 
-	dictMetrics := Metrics.List()
-	metricKeys := make([]string, 0, len(dictMetrics))
-	for k := range dictMetrics {
-		metricKeys = append(metricKeys, k)
-	}
-	sort.Strings(metricKeys)
-	listMetrics := make([]metrics.Metric, 0, len(dictMetrics))
-	for _, k := range metricKeys {
-		listMetrics = append(listMetrics, *dictMetrics[k])
+	listMetrics := Metrics.List()
+	metricKeys := make([]string, 0, len(*listMetrics))
+	for _, m := range *listMetrics {
+		metricKeys = append(metricKeys, m.ID)
 	}
 
 	w.Header().Set("Content-Type", "text/html")
@@ -150,6 +143,8 @@ func getReader(w http.ResponseWriter, r *http.Request) *io.ReadCloser {
 }
 
 func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
 	reader := *getReader(w, r)
 	if reader == nil {
 		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
@@ -180,6 +175,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	var newMetric metrics.Metric
 	if metricRequest.MType == metrics.Gauge {
 		if metricRequest.Value == nil {
 			http.Error(w, "Empty metric value", http.StatusBadRequest)
@@ -187,14 +183,14 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		}
 		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 
-		if UseDB {
-			if err = db.SetGauge(DB, metricRequest.ID, metricRequest.Value); err != nil {
-				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
-				return
+		if StoreMetrics {
+			if StoreMetricImmediately {
+				Storage.StoreBatchMetrics(ctx, *Metrics.List())
+			} else if err := Storage.StoreMetric(ctx, &metricRequest); err != nil {
+				http.Error(w, "Couldn't store metric", http.StatusInternalServerError)
 			}
-		} else if StoreMetricImmediately && len(StoreFile) > 0 {
-			storage.StoreMetrics(&Metrics, StoreFile)
 		}
+		newMetric = metricRequest
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
 		if metricRequest.Delta == nil {
@@ -203,19 +199,19 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newDelta := Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
-
-		if UseDB {
-			if err = db.UpdateCounter(DB, metricRequest.ID, newDelta); err != nil {
-				http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
-				return
-			}
-		} else if StoreMetricImmediately && len(StoreFile) > 0 {
-			storage.StoreMetrics(&Metrics, StoreFile)
-		}
+		newMetric = metrics.Metric{ID: metricRequest.ID, MType: metricRequest.MType, Delta: &newDelta}
 		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Error(w, "Unknown metric type", http.StatusBadRequest)
 		return
+	}
+
+	if StoreMetrics {
+		if StoreMetricImmediately {
+			Storage.StoreBatchMetrics(ctx, *Metrics.List())
+		} else if err := Storage.StoreMetric(ctx, &newMetric); err != nil {
+			http.Error(w, "Couldn't store metric", http.StatusInternalServerError)
+		}
 	}
 
 	// ??
@@ -272,6 +268,9 @@ func GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
 	reader := *getReader(w, r)
 	if reader == nil {
 		http.Error(w, "Couldn't get reader", http.StatusInternalServerError)
@@ -310,9 +309,6 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 			}
 			Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
 
-			if !UseDB && StoreMetricImmediately && len(StoreFile) > 0 {
-				storage.StoreMetrics(&Metrics, StoreFile)
-			}
 			updatedMetricsRequest = append(updatedMetricsRequest, metricRequest)
 		} else if metricRequest.MType == metrics.Counter {
 			if metricRequest.Delta == nil {
@@ -323,9 +319,6 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 			newDelta := Metrics.UpdateCounter(metricRequest.ID, *metricRequest.Delta)
 			metricRequest.Delta = &newDelta
 
-			if !UseDB && StoreMetricImmediately && len(StoreFile) > 0 {
-				storage.StoreMetrics(&Metrics, StoreFile)
-			}
 			updatedMetricsRequest = append(updatedMetricsRequest, metricRequest)
 		} else {
 			http.Error(w, "Unknown metric type", http.StatusBadRequest)
@@ -333,8 +326,8 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if UseDB {
-		if err = db.SetBatchMetrics(DB, updatedMetricsRequest); err != nil {
+	if StoreMetrics {
+		if err = Storage.StoreBatchMetrics(ctx, updatedMetricsRequest); err != nil {
 			log.Println(err)
 			http.Error(w, "Couldn't set metric into DB", http.StatusInternalServerError)
 			return
@@ -351,8 +344,8 @@ func SetBatchMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PingDB(w http.ResponseWriter, _ *http.Request) {
-	res := db.Ping(DB)
+func PingDB(w http.ResponseWriter, r *http.Request) {
+	res := Storage.Ping(r.Context())
 	if res {
 		w.WriteHeader(http.StatusOK)
 	} else {

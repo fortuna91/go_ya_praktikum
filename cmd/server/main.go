@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"github.com/fortuna91/go_ya_praktikum/internal/db"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 	"log"
 	"net/http"
 	"os"
@@ -12,15 +11,14 @@ import (
 	"time"
 
 	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/fsStorage"
 	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
 	"github.com/fortuna91/go_ya_praktikum/internal/server"
-	"github.com/fortuna91/go_ya_praktikum/internal/storage"
 )
 
 func main() {
 	config := configs.SetServerConfig()
-	handlers.StoreFile = config.StoreFile
 
 	r := server.NewRouter()
 	server := &http.Server{Addr: config.Address, Handler: middleware.GzipHandle(r)}
@@ -32,10 +30,8 @@ func main() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigChan
-		if handlers.UseDB {
-			storage.StoreMetrics(&handlers.Metrics, config.StoreFile)
-			handlers.DB.Close()
-		}
+		handlers.Storage.StoreBatchMetrics(context.Background(), *handlers.Metrics.List())
+		handlers.Storage.Close()
 
 		ctx, serverStopCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		err := server.Shutdown(ctx)
@@ -49,23 +45,24 @@ func main() {
 	handlers.HashKey = config.Key
 
 	if len(config.DB) > 0 {
-		handlers.DB = db.Connect(config.DB)
-		handlers.UseDB = true
-		db.CreateTable(handlers.DB)
-	} else if config.StoreInterval > 0 {
-		// true by default
-		handlers.StoreMetricImmediately = false
-		storeTicker := time.NewTicker(config.StoreInterval)
-		go storage.StoreMetricsTicker(storeTicker, &handlers.Metrics, config)
+		handlers.StoreMetrics = true
+		handlers.Storage = db.New(config.DB)
+		handlers.Storage.Create(context.Background())
+	} else if len(config.StoreFile) > 0 {
+		handlers.StoreMetrics = true
+		handlers.Storage = fsStorage.New(config.StoreFile)
+		if config.StoreInterval > 0 {
+			storeTicker := time.NewTicker(config.StoreInterval)
+			go fsStorage.StoreMetricsTicker(&handlers.Storage, storeTicker, &handlers.Metrics)
+		} else {
+			handlers.StoreMetricImmediately = true
+		}
+	} else {
+		log.Println("Do not store metrics")
 	}
 
 	if config.Restore {
-		var storedMetrics map[string]*metrics.Metric
-		if len(config.DB) > 0 {
-			storedMetrics = db.Restore(handlers.DB)
-		} else {
-			storedMetrics = storage.Restore(config.StoreFile)
-		}
+		storedMetrics := handlers.Storage.Restore()
 		handlers.Metrics.RestoreMetrics(storedMetrics)
 	}
 

@@ -116,30 +116,34 @@ func RunAgent() {
 	config := configs.SetAgentConfig()
 
 	pollTicker := time.NewTicker(config.PollInterval)
+	pollTicker2 := time.NewTicker(config.PollInterval)
 	reportTicker := time.NewTicker(config.ReportInterval)
+
+	pool := int(config.ReportInterval/config.PollInterval) + 1
 
 	chRuntime := make(chan []*metrics.Metric)
 	chGopsutil := make(chan []*metrics.Metric)
-	mergedCh := make(chan []*metrics.Metric)
-
-	go func() {
-		for {
-			<-mergedCh
-		}
-	}()
+	mergedCh := make(chan []*metrics.Metric, pool)
 
 	go func() {
 		for {
 			<-reportTicker.C
-			metricsList := <-mergedCh
-			log.Println("Send metrics...")
-			SendMetrics(&metricsList, config)
+			var metricsList []*metrics.Metric
+			// take the last one
+			for i := 0; i < len(mergedCh); i++ {
+				metricsList = <-mergedCh
+			}
+			if len(metricsList) > 0 {
+				log.Println("Send metrics...")
+				SendMetrics(&metricsList, config)
+
+			}
 		}
 	}()
 
 	go func() {
 		for {
-			<-pollTicker.C
+			<-pollTicker2.C
 			metricsList := GetNewMetrics()
 			chGopsutil <- metricsList
 		}

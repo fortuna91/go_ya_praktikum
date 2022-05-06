@@ -59,6 +59,7 @@ func (metrics *Metrics) UpdateCounter(id string, val int64) int64 {
 	} else if metrics.values[id] == nil {
 		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &val}
 	} else {
+
 		currVal := *metrics.values[id].Delta
 		newVal := currVal + val
 		metrics.values[id] = &Metric{ID: id, MType: Counter, Delta: &newVal}
@@ -67,13 +68,17 @@ func (metrics *Metrics) UpdateCounter(id string, val int64) int64 {
 	return *metrics.values[id].Delta
 }
 
-func (metrics *Metrics) List() map[string]*Metric {
+func (metrics *Metrics) List() *[]Metric {
 	metrics.mtx.Lock()
 	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
-		return map[string]*Metric{}
+		return nil
 	}
-	return metrics.values
+	var currMetrics []Metric
+	for _, m := range metrics.values {
+		currMetrics = append(currMetrics, *m)
+	}
+	return &currMetrics
 }
 
 func CalcHash(metric *Metric, key string) (hash string) {
