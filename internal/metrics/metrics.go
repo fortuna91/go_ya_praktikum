@@ -72,7 +72,7 @@ func (metrics *Metrics) List() *[]Metric {
 	metrics.mtx.Lock()
 	defer metrics.mtx.Unlock()
 	if metrics.values == nil {
-		return nil
+		return &[]Metric{}
 	}
 	var currMetrics []Metric
 	for _, m := range metrics.values {

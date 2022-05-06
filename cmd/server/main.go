@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/fsStorage"
+	"github.com/fortuna91/go_ya_praktikum/internal/fsstorage"
 	"github.com/fortuna91/go_ya_praktikum/internal/handlers"
 	"github.com/fortuna91/go_ya_praktikum/internal/middleware"
 	"github.com/fortuna91/go_ya_praktikum/internal/server"
@@ -50,10 +50,10 @@ func main() {
 		handlers.Storage.Create(context.Background())
 	} else if len(config.StoreFile) > 0 {
 		handlers.StoreMetrics = true
-		handlers.Storage = fsStorage.New(config.StoreFile)
+		handlers.Storage = fsstorage.New(config.StoreFile)
 		if config.StoreInterval > 0 {
 			storeTicker := time.NewTicker(config.StoreInterval)
-			go fsStorage.StoreMetricsTicker(&handlers.Storage, storeTicker, &handlers.Metrics)
+			go fsstorage.StoreMetricsTicker(&handlers.Storage, storeTicker, &handlers.Metrics)
 		} else {
 			handlers.StoreMetricImmediately = true
 		}

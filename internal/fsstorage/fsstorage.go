@@ -1,4 +1,4 @@
-package fsStorage
+package fsstorage
 
 import (
 	"context"
