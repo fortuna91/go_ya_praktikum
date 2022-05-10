@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/fortuna91/go_ya_praktikum/internal/configs"
 	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"math/rand"
 	"net/http"
@@ -58,6 +59,15 @@ func GetMetrics(count int64) []*metrics.Metric {
 	return metricsList
 }
 
+func GetNewMetrics() []*metrics.Metric {
+	var metricsList []*metrics.Metric
+	v, _ := mem.VirtualMemory()
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Total), ID: "TotalMemory", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Free), ID: "FreeMemory", MType: metrics.Gauge})
+	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(v.Used), ID: "CPUutilization1", MType: metrics.Gauge})
+	return metricsList
+}
+
 func SendRequest(client *http.Client, request *http.Request) int {
 	request.Header.Set("Content-Type", "application/json")
 	response, err := client.Do(request)
@@ -106,34 +116,53 @@ func RunAgent() {
 	config := configs.SetAgentConfig()
 
 	pollTicker := time.NewTicker(config.PollInterval)
+	pollTicker2 := time.NewTicker(config.PollInterval)
 	reportTicker := time.NewTicker(config.ReportInterval)
 
-	ch := make(chan []*metrics.Metric)
+	pool := int(config.ReportInterval/config.PollInterval) + 1
 
-	go func() {
-		for {
-			<-ch
-		}
-	}()
+	chRuntime := make(chan []*metrics.Metric)
+	chGopsutil := make(chan []*metrics.Metric)
+	mergedCh := make(chan []*metrics.Metric, pool)
 
 	go func() {
 		for {
 			<-reportTicker.C
-			metricsList := <-ch
+			var metricsList []*metrics.Metric
+			// take the last one
+			for i := 0; i < len(mergedCh); i++ {
+				metricsList = <-mergedCh
+			}
 			if len(metricsList) > 0 {
 				log.Println("Send metrics...")
 				SendMetrics(&metricsList, config)
+
 			}
 		}
 	}()
 
-	for {
+	go func() {
+		for {
+			<-pollTicker2.C
+			metricsList := GetNewMetrics()
+			chGopsutil <- metricsList
+		}
+	}()
+
+	go func() {
 		var i int64 = 0
 		for {
 			<-pollTicker.C
 			i++
 			metricsList := GetMetrics(i)
-			ch <- metricsList
+			chRuntime <- metricsList
 		}
+	}()
+
+	for {
+		rtMetrics := <-chRuntime
+		guMetrics := <-chGopsutil
+		metricsList := append(rtMetrics, guMetrics...)
+		mergedCh <- metricsList
 	}
 }
