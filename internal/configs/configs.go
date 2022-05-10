@@ -12,6 +12,7 @@ type AgentConfig struct {
 	Address        string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+	Key            string        `env:"KEY"`
 }
 
 type ServerConfig struct {
@@ -19,6 +20,8 @@ type ServerConfig struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"30s"`
 	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore       bool          `env:"RESTORE" envDefault:"true"`
+	Key           string        `env:"KEY"`
+	DB            string        `env:"DATABASE_DSN" envDefault:""`
 }
 
 func SetAgentConfig() AgentConfig {
@@ -36,6 +39,9 @@ func SetAgentConfig() AgentConfig {
 	if _, ok := os.LookupEnv("POLL_INTERVAL"); !ok {
 		flag.DurationVar(&config.PollInterval, "p", 2*time.Second, "Poll interval")
 	}
+	if _, ok := os.LookupEnv("KEY"); !ok {
+		flag.StringVar(&config.Key, "k", "", "Key for hashing")
+	}
 	flag.Parse()
 	return config
 }
@@ -50,6 +56,8 @@ func SetServerConfig() ServerConfig {
 	interval := flag.Duration("i", 30*time.Second, "Store interval")
 	file := flag.String("f", "/tmp/devops-metrics-db.json", "Store file name")
 	restore := flag.Bool("r", true, "Restore")
+	key := flag.String("k", "", "Key for hashing")
+	db := flag.String("d", "", "Database connection address")
 	flag.Parse()
 
 	if _, ok := os.LookupEnv("ADDRESS"); !ok {
@@ -63,6 +71,12 @@ func SetServerConfig() ServerConfig {
 	}
 	if _, ok := os.LookupEnv("RESTORE"); !ok {
 		config.Restore = *restore
+	}
+	if _, ok := os.LookupEnv("KEY"); !ok {
+		config.Key = *key
+	}
+	if _, ok := os.LookupEnv("DATABASE_DSN"); !ok {
+		config.DB = *db
 	}
 	return config
 }

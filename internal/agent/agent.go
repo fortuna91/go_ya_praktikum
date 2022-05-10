@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/fortuna91/go_ya_praktikum/internal/configs"
+	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
+	"log"
 	"math/rand"
 	"net/http"
 	"runtime"
 	"time"
-
-	"github.com/fortuna91/go_ya_praktikum/internal/configs"
-	"github.com/fortuna91/go_ya_praktikum/internal/metrics"
 )
 
 func getFloat64Pointer(val uint64) *float64 {
@@ -53,8 +53,8 @@ func GetMetrics(count int64) []*metrics.Metric {
 	metricsList = append(metricsList, &metrics.Metric{Value: getFloat64Pointer(mem.TotalAlloc), ID: "TotalAlloc", MType: metrics.Gauge})
 
 	metricsList = append(metricsList, &metrics.Metric{Delta: &count, ID: "PollCount", MType: metrics.Counter}) // TODO
-	val25 := rand.Float64()
-	metricsList = append(metricsList, &metrics.Metric{Value: &val25, ID: "RandomValue", MType: metrics.Gauge})
+	randVal := rand.Float64()
+	metricsList = append(metricsList, &metrics.Metric{Value: &randVal, ID: "RandomValue", MType: metrics.Gauge})
 	return metricsList
 }
 
@@ -71,7 +71,12 @@ func SendRequest(client *http.Client, request *http.Request) int {
 
 func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 	client := http.Client{}
-	for _, m := range *metricsList {
+	if len(config.Key) > 0 {
+		for _, m := range *metricsList {
+			m.SetHash(config.Key)
+		}
+	}
+	/*for _, m := range *metricsList {
 		body, err := json.Marshal(m)
 		if err != nil {
 			fmt.Printf("Cannot convert Metric to JSON: %v", err)
@@ -80,18 +85,29 @@ func SendMetrics(metricsList *[]*metrics.Metric, config configs.AgentConfig) {
 		request, _ := http.NewRequest(http.MethodPost, "http://"+config.Address+"/update", bytes.NewReader(body))
 		responseCode := SendRequest(&client, request)
 		if responseCode != 200 {
-			fmt.Printf("Error in request for %v: response code: %d", m.ID, responseCode)
+			fmt.Printf("Error in request for %v: response code: %d, \n", m.ID, responseCode)
 		}
+	}*/
+	body, err := json.Marshal(metricsList)
+	if err != nil {
+		log.Printf("Cannot convert Metric to JSON: %v", err)
+		return
+	}
+	request, _ := http.NewRequest(http.MethodPost, "http://"+config.Address+"/updates/", bytes.NewReader(body))
+	responseCode := SendRequest(&client, request)
+	if responseCode != 200 {
+		log.Printf("Error in request, response code: %d, \n", responseCode)
 	}
 }
 
 func RunAgent() {
-	fmt.Println("Start sending metrics...")
+	log.Println("Start sending metrics...")
 
 	config := configs.SetAgentConfig()
 
 	pollTicker := time.NewTicker(config.PollInterval)
 	reportTicker := time.NewTicker(config.ReportInterval)
+
 	ch := make(chan []*metrics.Metric)
 
 	go func() {
@@ -103,9 +119,11 @@ func RunAgent() {
 	go func() {
 		for {
 			<-reportTicker.C
-			metrics := <-ch
-			fmt.Println("Send metrics...")
-			SendMetrics(&metrics, config)
+			metricsList := <-ch
+			if len(metricsList) > 0 {
+				log.Println("Send metrics...")
+				SendMetrics(&metricsList, config)
+			}
 		}
 	}()
 
@@ -114,8 +132,8 @@ func RunAgent() {
 		for {
 			<-pollTicker.C
 			i++
-			metrics := GetMetrics(i)
-			ch <- metrics
+			metricsList := GetMetrics(i)
+			ch <- metricsList
 		}
 	}
 }
