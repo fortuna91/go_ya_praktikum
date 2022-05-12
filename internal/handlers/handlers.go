@@ -178,7 +178,7 @@ func SetMetricJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		Metrics.SetGauge(metricRequest.ID, metricRequest.Value)
-
+		
 		newMetric = metricRequest
 		w.WriteHeader(http.StatusOK)
 	} else if metricRequest.MType == metrics.Counter {
